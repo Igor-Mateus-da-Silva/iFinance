@@ -135,7 +135,8 @@ export class TransactionService {
     const user = this.supabase.currentUser();
     if (!user) throw new Error('Usuário não autenticado.');
 
-    const totalInstallments = Math.max(1, dto.installments ?? 1);
+    const rawInstallments = Math.floor(Number(dto.installments) || 1);
+    const totalInstallments = Math.min(120, Math.max(1, rawInstallments));
     const amounts = calculateInstallmentAmounts(dto.amount, totalInstallments);
     const fixedGroupId = dto.is_fixed ? crypto.randomUUID() : null;
 
@@ -207,30 +208,38 @@ export class TransactionService {
 
     if (error) throw error;
 
-    // Atualiza o saldo da conta financeira se account_id estiver presente
+    // Atualização segura e atômica de saldo (Prevenção de Race Condition & IDOR)
     const targetAccountId = cleanUuid(dto.account_id);
     if (targetAccountId && dto.payment_method !== 'CREDITO') {
-      try {
-        const { data: acc } = await this.supabase.client
-          .from('financial_accounts')
-          .select('balance')
-          .eq('id', targetAccountId)
-          .single();
+      const delta = dto.type === 'INCOME' ? dto.amount : (dto.is_paid ? -dto.amount : 0);
+      if (delta !== 0) {
+        try {
+          // 1. Tenta executar via RPC atômica (PostgreSQL row lock / transacional)
+          const { error: rpcError } = await this.supabase.client.rpc('adjust_account_balance', {
+            p_account_id: targetAccountId,
+            p_delta: delta,
+          });
 
-        if (acc) {
-          const currentBalance = Number(acc.balance) || 0;
-          // Se for INCOME, soma ao saldo. Se for EXPENSE pago, subtrai do saldo.
-          const delta = dto.type === 'INCOME' ? dto.amount : (dto.is_paid ? -dto.amount : 0);
-          if (delta !== 0) {
-            const newBalance = Math.round((currentBalance + delta) * 100) / 100;
-            await this.supabase.client
+          // 2. Fallback defensivo caso o script SQL de hardening ainda não tenha sido aplicado no Supabase
+          if (rpcError) {
+            const { data: acc } = await this.supabase.client
               .from('financial_accounts')
-              .update({ balance: newBalance })
-              .eq('id', targetAccountId);
+              .select('balance')
+              .eq('id', targetAccountId)
+              .single();
+
+            if (acc) {
+              const currentBalance = Number(acc.balance) || 0;
+              const newBalance = Math.round((currentBalance + delta) * 100) / 100;
+              await this.supabase.client
+                .from('financial_accounts')
+                .update({ balance: newBalance })
+                .eq('id', targetAccountId);
+            }
           }
+        } catch (accErr) {
+          console.warn('Não foi possível atualizar o saldo da conta:', accErr);
         }
-      } catch (accErr) {
-        console.warn('Não foi possível atualizar o saldo da conta:', accErr);
       }
     }
 

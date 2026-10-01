@@ -130,8 +130,8 @@ CREATE TABLE IF NOT EXISTS public.transactions (
     is_paid BOOLEAN NOT NULL DEFAULT true,
     is_fixed BOOLEAN NOT NULL DEFAULT false,
     fixed_group_id UUID,
-    current_installment INT NOT NULL DEFAULT 1 CHECK (current_installment >= 1),
-    total_installments INT NOT NULL DEFAULT 1 CHECK (total_installments >= 1),
+    current_installment INT NOT NULL DEFAULT 1 CHECK (current_installment BETWEEN 1 AND 120),
+    total_installments INT NOT NULL DEFAULT 1 CHECK (total_installments BETWEEN 1 AND 120),
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
@@ -153,3 +153,71 @@ CREATE POLICY "Usuários gerenciam suas próprias transações"
 CREATE TRIGGER tr_transactions_updated_at
     BEFORE UPDATE ON public.transactions
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ------------------------------------------------------------------------------
+-- 6. Reforço de Segurança & Operações Atômicas (Hardening)
+-- ------------------------------------------------------------------------------
+
+-- Função atômica para debitar/creditar saldo em conta com trava ACID (anti-race condition)
+CREATE OR REPLACE FUNCTION public.adjust_account_balance(
+    p_account_id UUID,
+    p_delta NUMERIC
+)
+RETURNS NUMERIC AS $$
+DECLARE
+    v_new_balance NUMERIC;
+BEGIN
+    UPDATE public.financial_accounts
+    SET balance = balance + p_delta
+    WHERE id = p_account_id AND user_id = auth.uid()
+    RETURNING balance INTO v_new_balance;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Conta inexistente ou não autorizada para este usuário.';
+    END IF;
+
+    RETURN v_new_balance;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger anti-IDOR: garante que conta, cartão e categoria pertençam ao mesmo usuário
+CREATE OR REPLACE FUNCTION public.validate_transaction_ownership()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.account_id IS NOT NULL THEN
+        IF NOT EXISTS (
+            SELECT 1 FROM public.financial_accounts 
+            WHERE id = NEW.account_id AND user_id = NEW.user_id
+        ) THEN
+            RAISE EXCEPTION 'Acesso negado: a conta financeira informada não pertence ao usuário.';
+        END IF;
+    END IF;
+
+    IF NEW.credit_card_id IS NOT NULL THEN
+        IF NOT EXISTS (
+            SELECT 1 FROM public.credit_cards 
+            WHERE id = NEW.credit_card_id AND user_id = NEW.user_id
+        ) THEN
+            RAISE EXCEPTION 'Acesso negado: o cartão de crédito informado não pertence ao usuário.';
+        END IF;
+    END IF;
+
+    IF NEW.category_id IS NOT NULL THEN
+        IF NOT EXISTS (
+            SELECT 1 FROM public.categories 
+            WHERE id = NEW.category_id AND user_id = NEW.user_id
+        ) THEN
+            RAISE EXCEPTION 'Acesso negado: a categoria informada não pertence ao usuário.';
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS tr_validate_transaction_ownership ON public.transactions;
+
+CREATE TRIGGER tr_validate_transaction_ownership
+    BEFORE INSERT OR UPDATE ON public.transactions
+    FOR EACH ROW EXECUTE FUNCTION public.validate_transaction_ownership();
+

@@ -234,6 +234,40 @@ describe('TransactionService & Date Helpers', () => {
       expect(insertedRows.length).toBe(1);
       expect(insertedRows[0].account_id).toBeNull();
     });
+
+    it('deve limitar o número máximo de parcelas a 120 para evitar DoS por exaustão', async () => {
+      const insertedRows: any[] = [];
+
+      mockSupabase.client.from.mockImplementation((table: string) => {
+        if (table === 'transactions') {
+          return {
+            insert: vi.fn().mockImplementation((records) => {
+              insertedRows.push(...records);
+              return {
+                select: vi.fn().mockResolvedValue({ data: records, error: null }),
+              };
+            }),
+          };
+        }
+        return {};
+      });
+
+      // Tenta enviar 9999 parcelas
+      await service.createTransaction({
+        description: 'Compra Abusiva',
+        amount: 12000,
+        date: '2026-10-02',
+        type: 'EXPENSE',
+        category_id: 'cat-1',
+        payment_method: 'DINHEIRO',
+        is_paid: false,
+        is_fixed: false,
+        installments: 9999,
+      });
+
+      expect(insertedRows.length).toBe(120);
+      expect(insertedRows[0].total_installments).toBe(120);
+    });
   });
 
   describe('Utilitário cleanUuid', () => {

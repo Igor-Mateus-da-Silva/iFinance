@@ -6,4 +6,6 @@ export const environment = {
     url: 'https://SEU_PROJETO.supabase.co',
     anonKey: 'SUA_CHAVE_ANON_PUBLICA',
   },
+  geminiApiKey: '',
 };
+

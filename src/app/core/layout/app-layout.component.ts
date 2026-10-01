@@ -3,6 +3,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter } from 'rxjs';
 import { SupabaseService } from '../services/supabase.service';
+import { AiChatComponent } from '../../features/financial/components/ai-chat.component';
 
 export interface NavItem {
   label: string;
@@ -14,7 +15,7 @@ export interface NavItem {
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, AiChatComponent],
   template: `
     <div class="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       <!-- 1. Top Navbar -->
@@ -153,6 +154,11 @@ export interface NavItem {
           </div>
         </main>
       </div>
+
+      <!-- 4. Assistente de IA Gemini (visível nas telas da área financeira) -->
+      @if (!isInvestments()) {
+        <app-ai-chat></app-ai-chat>
+      }
     </div>
   `,
 })

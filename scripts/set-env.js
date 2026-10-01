@@ -37,6 +37,8 @@ let supabaseUrl =
   process.env.SUPABASE_URL || envVars.SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseAnonKey =
   process.env.SUPABASE_ANON_KEY || envVars.SUPABASE_ANON_KEY || 'placeholder-anon-key';
+const geminiApiKey =
+  process.env.GEMINI_API_KEY || envVars.GEMINI_API_KEY || '';
 
 // Sanitiza URL para remover sufixos acidentais como /rest/v1/ ou barras finais
 supabaseUrl = supabaseUrl.replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
@@ -54,6 +56,7 @@ export const environment = {
     url: '${supabaseUrl}',
     anonKey: '${supabaseAnonKey}',
   },
+  geminiApiKey: '${geminiApiKey}',
 };
 `;
 
@@ -64,6 +67,7 @@ export const environment = {
     url: '${supabaseUrl}',
     anonKey: '${supabaseAnonKey}',
   },
+  geminiApiKey: '${geminiApiKey}',
 };
 `;
 
