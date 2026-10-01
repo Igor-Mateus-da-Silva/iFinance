@@ -71,6 +71,22 @@ export const routes: Routes = [
           ).then((m) => m.FinancialDashboardPageComponent),
         title: 'Dashboard Financeiro - iFinance Capital',
       },
+      {
+        path: 'transactions',
+        loadComponent: () =>
+          import(
+            './features/financial/pages/transactions-page.component'
+          ).then((m) => m.TransactionsPageComponent),
+        title: 'Lançamentos & Faturas - iFinance Capital',
+      },
+      {
+        path: 'setup',
+        loadComponent: () =>
+          import(
+            './features/financial/pages/financial-setup-page.component'
+          ).then((m) => m.FinancialSetupPageComponent),
+        title: 'Configurações Financeiras - iFinance Capital',
+      },
     ],
   },
   {
