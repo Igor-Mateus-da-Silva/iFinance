@@ -3,6 +3,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter } from 'rxjs';
 import { SupabaseService } from '../services/supabase.service';
+import { PwaInstallService } from '../services/pwa-install.service';
 import { AiChatComponent } from '../../features/financial/components/ai-chat.component';
 
 export interface NavItem {
@@ -63,8 +64,21 @@ export interface NavItem {
           </div>
         </div>
 
-        <!-- Ações do Usuário e Logout -->
+        <!-- Ações do Usuário, Instalação PWA e Logout -->
         <div class="flex items-center gap-2 sm:gap-3">
+          @if (pwaService.canInstall()) {
+            <button
+              type="button"
+              (click)="installPwa()"
+              title="Instalar iFinance no Dispositivo"
+              class="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/80 text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs">
+              <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span class="hidden sm:inline">Instalar App</span>
+            </button>
+          }
+
           <div class="hidden md:flex flex-col text-right">
             <span class="text-xs font-semibold text-gray-800">{{ userEmail() }}</span>
             <span class="text-[10px] text-gray-500">Investidor Autenticado</span>
@@ -191,6 +205,7 @@ export interface NavItem {
 export class AppLayoutComponent {
   private readonly router = inject(Router);
   readonly supabase = inject(SupabaseService);
+  readonly pwaService = inject(PwaInstallService);
 
   sidebarOpen = signal<boolean>(false);
   currentUrl = signal<string>(this.router.url);
@@ -276,6 +291,10 @@ export class AppLayoutComponent {
 
   goToHub(): void {
     this.router.navigate(['/hub']);
+  }
+
+  async installPwa(): Promise<void> {
+    await this.pwaService.promptInstall();
   }
 
   async logout(): Promise<void> {
