@@ -11,6 +11,7 @@ import {
 } from '../../../core/models/database.types';
 import { FinanceSetupService } from '../services/finance-setup.service';
 import { TransactionService } from '../services/transaction.service';
+import { ToastService } from '../../../core/services/toast.service';
 
 type ViewMode = 'all-transactions' | 'card-invoices';
 
@@ -24,30 +25,30 @@ type ViewMode = 'all-transactions' | 'card-invoices';
       <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div class="flex items-center gap-2">
-            <h1 class="text-2xl sm:text-3xl font-bold text-white tracking-tight">Lançamentos & Faturas</h1>
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">Lançamentos & Faturas</h1>
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200/60">
               Operação Diária
             </span>
           </div>
-          <p class="text-xs text-slate-400 mt-1">
+          <p class="text-xs text-gray-500 mt-1">
             Controle de despesas, receitas, compras parceladas e faturas de cartão de crédito.
           </p>
         </div>
 
         <div class="flex flex-wrap items-center gap-2.5">
           <!-- Seletor de Meses Moderno -->
-          <div class="flex items-center bg-slate-900 border border-slate-800 rounded-2xl p-1 shadow-lg">
+          <div class="flex items-center bg-white border border-gray-200/90 rounded-2xl p-1 shadow-xs">
             <button
               type="button"
               (click)="changeMonth(-1)"
               title="Mês Anterior"
-              class="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+              class="p-2 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
               </svg>
             </button>
 
-            <span class="px-3 text-xs font-bold text-white capitalize min-w-[130px] text-center">
+            <span class="px-3 text-xs font-bold text-gray-900 capitalize min-w-[130px] text-center">
               {{ currentMonthLabel() }}
             </span>
 
@@ -55,7 +56,7 @@ type ViewMode = 'all-transactions' | 'card-invoices';
               type="button"
               (click)="changeMonth(1)"
               title="Próximo Mês"
-              class="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+              class="p-2 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
               </svg>
@@ -66,7 +67,7 @@ type ViewMode = 'all-transactions' | 'card-invoices';
             <button
               type="button"
               (click)="resetToCurrentMonth()"
-              class="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[11px] font-semibold text-slate-300 hover:text-white transition-all">
+              class="px-3 py-2 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 text-[11px] font-semibold text-gray-700 shadow-xs transition-all">
               Mês Atual
             </button>
           }
@@ -75,7 +76,7 @@ type ViewMode = 'all-transactions' | 'card-invoices';
           <button
             type="button"
             (click)="openNewTransactionModal()"
-            class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition-all shadow-md shadow-emerald-500/20 flex items-center gap-1.5">
+            class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
             </svg>
@@ -87,117 +88,118 @@ type ViewMode = 'all-transactions' | 'card-invoices';
       <!-- Alertas de Feedback -->
       @if (feedback()) {
         <div
-          [class.bg-emerald-500/10]="feedback()?.type === 'success'"
-          [class.border-emerald-500/30]="feedback()?.type === 'success'"
-          [class.text-emerald-300]="feedback()?.type === 'success'"
-          [class.bg-rose-500/10]="feedback()?.type === 'error'"
-          [class.border-rose-500/30]="feedback()?.type === 'error'"
-          [class.text-rose-300]="feedback()?.type === 'error'"
-          class="p-4 rounded-xl border text-xs flex items-center justify-between transition-all">
+          [class.bg-emerald-50]="feedback()?.type === 'success'"
+          [class.border-emerald-200]="feedback()?.type === 'success'"
+          [class.text-emerald-800]="feedback()?.type === 'success'"
+          [class.bg-rose-50]="feedback()?.type === 'error'"
+          [class.border-rose-200]="feedback()?.type === 'error'"
+          [class.text-rose-800]="feedback()?.type === 'error'"
+          class="p-4 rounded-xl border text-xs flex items-center justify-between transition-all shadow-xs">
           <span>{{ feedback()?.text }}</span>
-          <button (click)="feedback.set(null)" class="text-slate-400 hover:text-white">✕</button>
+          <button (click)="feedback.set(null)" class="text-gray-400 hover:text-gray-600">✕</button>
         </div>
       }
 
       <!-- 2. Cards de Resumo do Mês -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Receitas -->
-        <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl flex flex-col justify-between">
-          <div class="flex items-center justify-between text-slate-400 text-xs mb-3">
+        <div class="p-5 rounded-2xl bg-white border border-gray-200/90 shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between text-gray-500 text-xs mb-3">
             <span class="font-medium">Receitas do Mês</span>
-            <div class="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+            <div class="w-7 h-7 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M7 11l5-5m0 0l5 5m-5-5v12" />
               </svg>
             </div>
           </div>
           <div>
-            <div class="text-xl sm:text-2xl font-bold font-mono text-emerald-400">
+            <div class="text-xl sm:text-2xl font-bold font-mono text-emerald-600">
               {{ totalIncome() | currency: 'BRL':'symbol':'1.2-2' }}
             </div>
-            <span class="text-[10px] text-slate-500 mt-1 block">
+            <span class="text-[10px] text-gray-400 mt-1 block">
               {{ incomeCount() }} {{ incomeCount() === 1 ? 'entrada' : 'entradas' }} registradas
             </span>
           </div>
         </div>
 
         <!-- Despesas -->
-        <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl flex flex-col justify-between">
-          <div class="flex items-center justify-between text-slate-400 text-xs mb-3">
+        <div class="p-5 rounded-2xl bg-white border border-gray-200/90 shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between text-gray-500 text-xs mb-3">
             <span class="font-medium">Despesas do Mês</span>
-            <div class="w-7 h-7 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center">
+            <div class="w-7 h-7 rounded-lg bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M17 13l-5 5m0 0l-5-5m5 5V6" />
               </svg>
             </div>
           </div>
           <div>
-            <div class="text-xl sm:text-2xl font-bold font-mono text-rose-400">
+            <div class="text-xl sm:text-2xl font-bold font-mono text-rose-600">
               {{ totalExpense() | currency: 'BRL':'symbol':'1.2-2' }}
             </div>
-            <span class="text-[10px] text-slate-500 mt-1 block">
+            <span class="text-[10px] text-gray-400 mt-1 block">
               {{ expenseCount() }} {{ expenseCount() === 1 ? 'saída' : 'saídas' }} registradas
             </span>
           </div>
         </div>
 
         <!-- Saldo Previsto -->
-        <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl flex flex-col justify-between">
-          <div class="flex items-center justify-between text-slate-400 text-xs mb-3">
+        <div class="p-5 rounded-2xl bg-white border border-gray-200/90 shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between text-gray-500 text-xs mb-3">
             <span class="font-medium">Saldo Previsto</span>
             <div
-              [class.bg-emerald-500/10]="netBalance() >= 0"
-              [class.text-emerald-400]="netBalance() >= 0"
-              [class.border-emerald-500/20]="netBalance() >= 0"
-              [class.bg-rose-500/10]="netBalance() < 0"
-              [class.text-rose-400]="netBalance() < 0"
-              [class.border-rose-500/20]="netBalance() < 0"
+              [class.bg-emerald-50]="netBalance() >= 0"
+              [class.text-emerald-600]="netBalance() >= 0"
+              [class.border-emerald-200]="netBalance() >= 0"
+              [class.bg-rose-50]="netBalance() < 0"
+              [class.text-rose-600]="netBalance() < 0"
+              [class.border-rose-200]="netBalance() < 0"
               class="w-7 h-7 rounded-lg border flex items-center justify-center font-bold text-xs">
               {{ netBalance() >= 0 ? '✓' : '!' }}
             </div>
           </div>
           <div>
             <div
-              [class.text-emerald-400]="netBalance() >= 0"
-              [class.text-rose-400]="netBalance() < 0"
+              [class.text-emerald-600]="netBalance() >= 0"
+              [class.text-rose-600]="netBalance() < 0"
               class="text-xl sm:text-2xl font-bold font-mono">
               {{ netBalance() | currency: 'BRL':'symbol':'1.2-2' }}
             </div>
-            <span class="text-[10px] text-slate-500 mt-1 block">
+            <span class="text-[10px] text-gray-400 mt-1 block">
               {{ netBalance() >= 0 ? 'Superávit previsto no mês' : 'Atenção: déficit previsto no mês' }}
             </span>
           </div>
         </div>
 
         <!-- Status de Pagamento (Pago vs Pendente) -->
-        <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl flex flex-col justify-between">
-          <div class="flex items-center justify-between text-slate-400 text-xs mb-3">
+        <div class="p-5 rounded-2xl bg-white border border-gray-200/90 shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between text-gray-500 text-xs mb-3">
             <span class="font-medium">Situação dos Pagamentos</span>
-            <span class="text-[11px] font-bold text-amber-400 font-mono">
+            <span class="text-[11px] font-bold text-amber-600 font-mono">
               {{ pendingCount() }} pendentes
             </span>
           </div>
           <div>
-            <div class="text-sm font-semibold text-slate-200">
-              Pago: <span class="font-mono text-emerald-400 font-bold">{{ totalPaid() | currency: 'BRL':'symbol':'1.2-2' }}</span>
+            <div class="text-sm font-semibold text-gray-700">
+              Pago: <span class="font-mono text-emerald-600 font-bold">{{ totalPaid() | currency: 'BRL':'symbol':'1.2-2' }}</span>
             </div>
-            <div class="text-xs text-slate-400 mt-0.5">
-              Pendente: <span class="font-mono text-amber-400 font-bold">{{ totalPending() | currency: 'BRL':'symbol':'1.2-2' }}</span>
+            <div class="text-xs text-gray-500 mt-0.5">
+              Pendente: <span class="font-mono text-amber-600 font-bold">{{ totalPending() | currency: 'BRL':'symbol':'1.2-2' }}</span>
             </div>
           </div>
         </div>
       </div>
 
       <!-- 3. Abas de Visão: Visão Mensal Geral vs Faturas de Cartão -->
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <div class="flex p-1 bg-slate-900 border border-slate-800 rounded-2xl">
+      <div class="flex items-center justify-between border-b border-gray-200 pb-3">
+        <div class="flex p-1 bg-gray-100 border border-gray-200/80 rounded-2xl">
           <button
             type="button"
             (click)="activeView.set('all-transactions')"
-            [class.bg-emerald-500]="activeView() === 'all-transactions'"
-            [class.text-slate-950]="activeView() === 'all-transactions'"
+            [class.bg-white]="activeView() === 'all-transactions'"
+            [class.text-blue-700]="activeView() === 'all-transactions'"
+            [class.shadow-2xs]="activeView() === 'all-transactions'"
             [class.font-bold]="activeView() === 'all-transactions'"
-            class="px-4 py-1.5 text-xs rounded-xl font-medium text-slate-300 transition-all flex items-center gap-2">
+            class="px-4 py-1.5 text-xs rounded-xl font-medium text-gray-600 hover:text-gray-900 transition-all flex items-center gap-2">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
             </svg>
@@ -207,16 +209,17 @@ type ViewMode = 'all-transactions' | 'card-invoices';
           <button
             type="button"
             (click)="activeView.set('card-invoices')"
-            [class.bg-indigo-500]="activeView() === 'card-invoices'"
-            [class.text-slate-950]="activeView() === 'card-invoices'"
+            [class.bg-white]="activeView() === 'card-invoices'"
+            [class.text-blue-700]="activeView() === 'card-invoices'"
+            [class.shadow-2xs]="activeView() === 'card-invoices'"
             [class.font-bold]="activeView() === 'card-invoices'"
-            class="px-4 py-1.5 text-xs rounded-xl font-medium text-slate-300 transition-all flex items-center gap-2">
+            class="px-4 py-1.5 text-xs rounded-xl font-medium text-gray-600 hover:text-gray-900 transition-all flex items-center gap-2">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
             <span>Faturas de Cartão</span>
             @if (creditCards().length > 0) {
-              <span class="px-1.5 py-0.2 rounded-full text-[9px] bg-slate-800 text-indigo-300">
+              <span class="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-200/60">
                 {{ creditCards().length }}
               </span>
             }
@@ -225,26 +228,32 @@ type ViewMode = 'all-transactions' | 'card-invoices';
 
         @if (activeView() === 'all-transactions') {
           <!-- Filtro rápido por tipo -->
-          <div class="hidden sm:flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl p-0.5 text-xs">
+          <div class="hidden sm:flex items-center gap-1 bg-gray-100 border border-gray-200/80 rounded-xl p-0.5 text-xs">
             <button
               (click)="typeFilter.set('ALL')"
-              [class.bg-slate-800]="typeFilter() === 'ALL'"
-              [class.text-white]="typeFilter() === 'ALL'"
-              class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition-colors">
+              [class.bg-white]="typeFilter() === 'ALL'"
+              [class.text-gray-900]="typeFilter() === 'ALL'"
+              [class.font-bold]="typeFilter() === 'ALL'"
+              [class.shadow-2xs]="typeFilter() === 'ALL'"
+              class="px-2.5 py-1 rounded-lg text-gray-500 hover:text-gray-900 transition-colors">
               Todas
             </button>
             <button
               (click)="typeFilter.set('EXPENSE')"
-              [class.bg-slate-800]="typeFilter() === 'EXPENSE'"
-              [class.text-rose-400]="typeFilter() === 'EXPENSE'"
-              class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition-colors">
+              [class.bg-white]="typeFilter() === 'EXPENSE'"
+              [class.text-rose-600]="typeFilter() === 'EXPENSE'"
+              [class.font-bold]="typeFilter() === 'EXPENSE'"
+              [class.shadow-2xs]="typeFilter() === 'EXPENSE'"
+              class="px-2.5 py-1 rounded-lg text-gray-500 hover:text-gray-900 transition-colors">
               Despesas
             </button>
             <button
               (click)="typeFilter.set('INCOME')"
-              [class.bg-slate-800]="typeFilter() === 'INCOME'"
-              [class.text-emerald-400]="typeFilter() === 'INCOME'"
-              class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition-colors">
+              [class.bg-white]="typeFilter() === 'INCOME'"
+              [class.text-emerald-600]="typeFilter() === 'INCOME'"
+              [class.font-bold]="typeFilter() === 'INCOME'"
+              [class.shadow-2xs]="typeFilter() === 'INCOME'"
+              class="px-2.5 py-1 rounded-lg text-gray-500 hover:text-gray-900 transition-colors">
               Receitas
             </button>
           </div>
@@ -254,38 +263,38 @@ type ViewMode = 'all-transactions' | 'card-invoices';
       <!-- 4. Conteúdo: ABA 1 - TODAS AS TRANSAÇÕES -->
       @if (activeView() === 'all-transactions') {
         @if (isLoading()) {
-          <div class="p-16 text-center text-slate-400">
-            <svg class="animate-spin h-8 w-8 text-emerald-400 mx-auto mb-3" fill="none" viewBox="0 0 24 24">
+          <div class="p-16 text-center text-gray-400">
+            <svg class="animate-spin h-8 w-8 text-blue-600 mx-auto mb-3" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
             </svg>
             <span class="text-xs">Carregando transações de {{ currentMonthLabel() }}...</span>
           </div>
         } @else if (filteredTransactions().length === 0) {
-          <div class="p-12 text-center rounded-3xl bg-slate-900/60 border border-dashed border-slate-800 max-w-xl mx-auto">
-            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 mx-auto flex items-center justify-center mb-3">
+          <div class="p-12 text-center rounded-3xl bg-white border border-dashed border-gray-300 max-w-xl mx-auto shadow-xs">
+            <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 mx-auto flex items-center justify-center mb-3">
               <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
-            <h3 class="text-base font-bold text-white">Nenhum lançamento em {{ currentMonthLabel() }}</h3>
-            <p class="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+            <h3 class="text-base font-bold text-gray-900">Nenhum lançamento em {{ currentMonthLabel() }}</h3>
+            <p class="text-xs text-gray-500 mt-1 max-w-md mx-auto">
               Registre despesas do dia a dia, receitas salariais ou compras parceladas para acompanhar seu orçamento.
             </p>
             <button
               type="button"
               (click)="openNewTransactionModal()"
-              class="mt-5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-all shadow-lg shadow-emerald-500/20">
+              class="mt-5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-all shadow-xs">
               Registrar Primeiro Lançamento
             </button>
           </div>
         } @else {
           <!-- Tabela de Lançamentos -->
-          <div class="bg-slate-900/80 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+          <div class="bg-white border border-gray-200/90 rounded-3xl overflow-hidden shadow-xs">
             <div class="overflow-x-auto">
               <table class="w-full text-left text-xs">
                 <thead>
-                  <tr class="bg-slate-950/60 border-b border-slate-800 text-slate-400 uppercase tracking-wider text-[10px]">
+                  <tr class="bg-gray-50/80 border-b border-gray-200 text-gray-500 uppercase tracking-wider text-[10px]">
                     <th class="py-3.5 px-4 font-bold text-center w-24">Status</th>
                     <th class="py-3.5 px-4 font-bold w-24">Data</th>
                     <th class="py-3.5 px-4 font-bold">Descrição</th>
@@ -295,21 +304,21 @@ type ViewMode = 'all-transactions' | 'card-invoices';
                     <th class="py-3.5 px-4 font-bold text-center w-16">Ação</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-850">
+                <tbody class="divide-y divide-gray-100">
                   @for (t of filteredTransactions(); track t.id) {
-                    <tr class="hover:bg-slate-850/40 transition-colors group">
+                    <tr class="hover:bg-gray-50/60 transition-colors group">
                       <!-- 1. Checkbox / Status com 1 clique -->
                       <td class="py-3 px-4 text-center">
                         <button
                           type="button"
                           (click)="togglePaid(t)"
                           [title]="t.is_paid ? 'Clique para marcar como Pendente' : 'Clique para marcar como Pago'"
-                          [class.bg-emerald-500/10]="t.is_paid"
-                          [class.border-emerald-500/30]="t.is_paid"
-                          [class.text-emerald-400]="t.is_paid"
-                          [class.bg-amber-500/10]="!t.is_paid"
-                          [class.border-amber-500/30]="!t.is_paid"
-                          [class.text-amber-400]="!t.is_paid"
+                          [class.bg-emerald-50]="t.is_paid"
+                          [class.border-emerald-200]="t.is_paid"
+                          [class.text-emerald-700]="t.is_paid"
+                          [class.bg-amber-50]="!t.is_paid"
+                          [class.border-amber-200]="!t.is_paid"
+                          [class.text-amber-700]="!t.is_paid"
                           class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all hover:scale-105">
                           @if (t.is_paid) {
                             <span>✓</span>
@@ -322,29 +331,29 @@ type ViewMode = 'all-transactions' | 'card-invoices';
                       </td>
 
                       <!-- 2. Data / Dia -->
-                      <td class="py-3 px-4 font-mono text-slate-300 text-[11px] whitespace-nowrap">
+                      <td class="py-3 px-4 font-mono text-gray-600 text-[11px] whitespace-nowrap">
                         {{ formatDisplayDate(t.date) }}
                       </td>
 
                       <!-- 3. Descrição + Tags (Parcela, Fixa, Cartão) -->
                       <td class="py-3 px-4">
                         <div class="flex items-center gap-2 flex-wrap">
-                          <span class="font-bold text-white text-xs">{{ t.description }}</span>
+                          <span class="font-bold text-gray-900 text-xs">{{ t.description }}</span>
 
                           @if (t.total_installments > 1) {
-                            <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                            <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200/60">
                               {{ t.current_installment }}/{{ t.total_installments }}
                             </span>
                           }
 
                           @if (t.is_fixed) {
-                            <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                            <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-50 text-cyan-700 border border-cyan-200/60">
                               Fixa
                             </span>
                           }
 
                           @if (t.credit_card) {
-                            <span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-800 text-slate-300 border border-slate-700 flex items-center gap-1">
+                            <span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gray-100 text-gray-700 border border-gray-200 flex items-center gap-1">
                               <span>💳</span>
                               <span>{{ t.credit_card.name }}</span>
                             </span>
@@ -358,20 +367,20 @@ type ViewMode = 'all-transactions' | 'card-invoices';
                           <span
                             class="w-2.5 h-2.5 rounded-full shrink-0"
                             [style.background-color]="t.category?.color_or_icon || '#10b981'"></span>
-                          <span class="text-slate-300 text-xs">{{ t.category?.name || 'Sem categoria' }}</span>
+                          <span class="text-gray-700 text-xs">{{ t.category?.name || 'Sem categoria' }}</span>
                         </div>
                       </td>
 
                       <!-- 5. Forma de Pagamento -->
                       <td class="py-3 px-4 whitespace-nowrap">
-                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-700 border border-gray-200">
                           {{ t.payment_method }}
                         </span>
                       </td>
 
                       <!-- 6. Valor -->
                       <td class="py-3 px-4 text-right font-mono font-bold text-xs whitespace-nowrap">
-                        <span [class.text-emerald-400]="t.type === 'INCOME'" [class.text-slate-200]="t.type === 'EXPENSE'">
+                        <span [class.text-emerald-600]="t.type === 'INCOME'" [class.text-gray-900]="t.type === 'EXPENSE'">
                           {{ t.type === 'INCOME' ? '+' : '-' }} {{ t.amount | currency: 'BRL':'symbol':'1.2-2' }}
                         </span>
                       </td>
@@ -382,7 +391,7 @@ type ViewMode = 'all-transactions' | 'card-invoices';
                           type="button"
                           (click)="deleteTransaction(t)"
                           title="Excluir Lançamento"
-                          class="p-1 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors">
+                          class="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-gray-100 transition-colors">
                           <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
@@ -400,26 +409,26 @@ type ViewMode = 'all-transactions' | 'card-invoices';
       <!-- 5. Conteúdo: ABA 2 - VISÃO DE FATURAS DE CARTÃO -->
       @if (activeView() === 'card-invoices') {
         @if (creditCards().length === 0) {
-          <div class="p-12 text-center rounded-3xl bg-slate-900/60 border border-dashed border-slate-800 max-w-xl mx-auto">
-            <h3 class="text-base font-bold text-white">Nenhum Cartão de Crédito Cadastrado</h3>
-            <p class="text-xs text-slate-400 mt-1">
+          <div class="p-12 text-center rounded-3xl bg-white border border-dashed border-gray-300 max-w-xl mx-auto shadow-xs">
+            <h3 class="text-base font-bold text-gray-900">Nenhum Cartão de Crédito Cadastrado</h3>
+            <p class="text-xs text-gray-500 mt-1">
               Cadastre seus cartões com o dia de fechamento e vencimento na aba de Configurações para gerenciar faturas.
             </p>
           </div>
         } @else {
           <div class="space-y-6">
             <!-- Seletor de Cartão e Resumo da Fatura -->
-            <div class="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-xl">
+            <div class="bg-white border border-gray-200/90 rounded-3xl p-6 shadow-xs">
               <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <!-- Seletor do Cartão Ativo -->
                 <div>
-                  <label class="block text-[11px] font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">
+                  <label class="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">
                     Selecione o Cartão:
                   </label>
                   <select
                     [ngModel]="selectedCardId()"
                     (ngModelChange)="selectedCardId.set($event)"
-                    class="px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    class="px-3.5 py-2 rounded-xl bg-gray-50 border border-gray-300 text-gray-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600">
                     @for (card of creditCards(); track card.id) {
                       <option [value]="card.id">
                         💳 {{ card.name }} (Fecha dia {{ card.closing_day }} | Vence dia {{ card.due_day }})
@@ -430,9 +439,9 @@ type ViewMode = 'all-transactions' | 'card-invoices';
 
                 <!-- Detalhes da Fatura do Mês -->
                 <div class="flex flex-wrap items-center gap-4">
-                  <div class="bg-slate-850 p-3.5 rounded-2xl border border-slate-800">
-                    <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Fatura de {{ currentMonthLabel() }}:</span>
-                    <strong class="text-xl font-bold font-mono text-indigo-400">
+                  <div class="bg-gray-50 p-3.5 rounded-2xl border border-gray-200">
+                    <span class="text-[10px] text-gray-500 uppercase tracking-wider block">Fatura de {{ currentMonthLabel() }}:</span>
+                    <strong class="text-xl font-bold font-mono text-blue-700">
                       {{ selectedInvoiceTotal() | currency: 'BRL':'symbol':'1.2-2' }}
                     </strong>
                   </div>
@@ -442,7 +451,7 @@ type ViewMode = 'all-transactions' | 'card-invoices';
                       type="button"
                       (click)="payEntireInvoice()"
                       [disabled]="selectedInvoiceAllPaid()"
-                      class="px-4 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 text-xs font-bold transition-all shadow-md shadow-emerald-500/20">
+                      class="px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold transition-all shadow-xs">
                       {{ selectedInvoiceAllPaid() ? '✓ Fatura Paga' : 'Marcar Fatura como Paga' }}
                     </button>
                   }
@@ -452,15 +461,15 @@ type ViewMode = 'all-transactions' | 'card-invoices';
 
             <!-- Lista de Itens da Fatura -->
             @if (cardInvoiceTransactions().length === 0) {
-              <div class="p-10 text-center rounded-3xl bg-slate-900/60 border border-dashed border-slate-800">
-                <p class="text-xs text-slate-400">Nenhum lançamento ou parcela caindo nesta fatura em {{ currentMonthLabel() }}.</p>
+              <div class="p-10 text-center rounded-3xl bg-white border border-dashed border-gray-300 shadow-xs">
+                <p class="text-xs text-gray-500">Nenhum lançamento ou parcela caindo nesta fatura em {{ currentMonthLabel() }}.</p>
               </div>
             } @else {
-              <div class="bg-slate-900/80 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+              <div class="bg-white border border-gray-200/90 rounded-3xl overflow-hidden shadow-xs">
                 <div class="overflow-x-auto">
                   <table class="w-full text-left text-xs">
                     <thead>
-                      <tr class="bg-slate-950/60 border-b border-slate-800 text-slate-400 uppercase tracking-wider text-[10px]">
+                      <tr class="bg-gray-50/80 border-b border-gray-200 text-gray-500 uppercase tracking-wider text-[10px]">
                         <th class="py-3 px-4 font-bold text-center w-24">Status</th>
                         <th class="py-3 px-4 font-bold w-24">Data</th>
                         <th class="py-3 px-4 font-bold">Descrição</th>
@@ -469,32 +478,32 @@ type ViewMode = 'all-transactions' | 'card-invoices';
                         <th class="py-3 px-4 font-bold text-right">Valor</th>
                       </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-850">
+                    <tbody class="divide-y divide-gray-100">
                       @for (t of cardInvoiceTransactions(); track t.id) {
-                        <tr class="hover:bg-slate-850/40 transition-colors">
+                        <tr class="hover:bg-gray-50/60 transition-colors">
                           <td class="py-3 px-4 text-center">
                             <button
                               type="button"
                               (click)="togglePaid(t)"
-                              [class.bg-emerald-500/10]="t.is_paid"
-                              [class.text-emerald-400]="t.is_paid"
-                              [class.border-emerald-500/30]="t.is_paid"
-                              [class.bg-amber-500/10]="!t.is_paid"
-                              [class.text-amber-400]="!t.is_paid"
-                              [class.border-amber-500/30]="!t.is_paid"
+                              [class.bg-emerald-50]="t.is_paid"
+                              [class.text-emerald-700]="t.is_paid"
+                              [class.border-emerald-200]="t.is_paid"
+                              [class.bg-amber-50]="!t.is_paid"
+                              [class.text-amber-700]="!t.is_paid"
+                              [class.border-amber-200]="!t.is_paid"
                               class="px-2 py-0.5 rounded-full text-[10px] font-bold border">
                               {{ t.is_paid ? '✓ Pago' : '⏳ Pendente' }}
                             </button>
                           </td>
-                          <td class="py-3 px-4 font-mono text-slate-300">{{ formatDisplayDate(t.date) }}</td>
-                          <td class="py-3 px-4 font-bold text-white">{{ t.description }}</td>
+                          <td class="py-3 px-4 font-mono text-gray-600">{{ formatDisplayDate(t.date) }}</td>
+                          <td class="py-3 px-4 font-bold text-gray-900">{{ t.description }}</td>
                           <td class="py-3 px-4">
-                            <span class="text-slate-300">{{ t.category?.name }}</span>
+                            <span class="text-gray-700">{{ t.category?.name }}</span>
                           </td>
-                          <td class="py-3 px-4 text-center font-mono font-bold text-indigo-300">
+                          <td class="py-3 px-4 text-center font-mono font-bold text-blue-700">
                             {{ t.total_installments > 1 ? t.current_installment + '/' + t.total_installments : '1x' }}
                           </td>
-                          <td class="py-3 px-4 text-right font-mono font-bold text-rose-400">
+                          <td class="py-3 px-4 text-right font-mono font-bold text-rose-600">
                             {{ t.amount | currency: 'BRL':'symbol':'1.2-2' }}
                           </td>
                         </tr>
@@ -510,25 +519,27 @@ type ViewMode = 'all-transactions' | 'card-invoices';
 
       <!-- 6. MODAL: NOVO LANÇAMENTO (DESPESA OU RECEITA) -->
       @if (showNewModal()) {
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-          <div class="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 my-8">
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-950/40 backdrop-blur-xs overflow-y-auto">
+          <div class="w-full max-w-lg bg-white border border-gray-200 rounded-3xl shadow-2xl p-6 sm:p-8 my-8">
             <!-- Alternador de Tipo no Topo do Modal -->
-            <div class="flex p-1 bg-slate-800 rounded-2xl mb-6">
+            <div class="flex p-1 bg-gray-100 rounded-2xl mb-6">
               <button
                 type="button"
                 (click)="setFormType('EXPENSE')"
                 [class.bg-rose-500]="form.type === 'EXPENSE'"
                 [class.text-white]="form.type === 'EXPENSE'"
-                class="flex-1 py-2 text-center rounded-xl text-xs font-bold transition-all text-slate-400 flex items-center justify-center gap-1.5">
+                [class.shadow-2xs]="form.type === 'EXPENSE'"
+                class="flex-1 py-2 text-center rounded-xl text-xs font-bold transition-all text-gray-600 hover:text-gray-900 flex items-center justify-center gap-1.5">
                 <span>↓</span>
                 <span>Nova Despesa (Saída)</span>
               </button>
               <button
                 type="button"
                 (click)="setFormType('INCOME')"
-                [class.bg-emerald-500]="form.type === 'INCOME'"
-                [class.text-slate-950]="form.type === 'INCOME'"
-                class="flex-1 py-2 text-center rounded-xl text-xs font-bold transition-all text-slate-400 flex items-center justify-center gap-1.5">
+                [class.bg-emerald-600]="form.type === 'INCOME'"
+                [class.text-white]="form.type === 'INCOME'"
+                [class.shadow-2xs]="form.type === 'INCOME'"
+                class="flex-1 py-2 text-center rounded-xl text-xs font-bold transition-all text-gray-600 hover:text-gray-900 flex items-center justify-center gap-1.5">
                 <span>↑</span>
                 <span>Nova Receita (Entrada)</span>
               </button>
@@ -537,9 +548,9 @@ type ViewMode = 'all-transactions' | 'card-invoices';
             <form (ngSubmit)="handleSaveTransaction()" class="space-y-4">
               <!-- Valor (Destaque Principal) -->
               <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1" for="txAmount">Valor *</label>
+                <label class="block text-xs font-semibold text-gray-700 mb-1" for="txAmount">Valor *</label>
                 <div class="relative">
-                  <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">R$</span>
+                  <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400">R$</span>
                   <input
                     id="txAmount"
                     type="number"
@@ -549,13 +560,13 @@ type ViewMode = 'all-transactions' | 'card-invoices';
                     [(ngModel)]="form.amount"
                     name="txAmount"
                     placeholder="0,00"
-                    class="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-800 border border-slate-700 text-white font-mono text-lg font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    class="w-full pl-10 pr-4 py-3 rounded-2xl bg-gray-50/70 border border-gray-300 text-gray-900 font-mono text-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600" />
                 </div>
               </div>
 
               <!-- Descrição -->
               <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1" for="txDesc">Descrição *</label>
+                <label class="block text-xs font-semibold text-gray-700 mb-1" for="txDesc">Descrição *</label>
                 <input
                   id="txDesc"
                   type="text"
@@ -563,12 +574,12 @@ type ViewMode = 'all-transactions' | 'card-invoices';
                   [(ngModel)]="form.description"
                   name="txDesc"
                   placeholder="Ex: Mercado Pão de Açúcar, Salário Mensal..."
-                  class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-gray-50/70 border border-gray-300 text-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600" />
               </div>
 
               <!-- Data do Lançamento -->
               <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1" for="txDate">
+                <label class="block text-xs font-semibold text-gray-700 mb-1" for="txDate">
                   {{ form.type === 'INCOME' ? 'Data do Recebimento *' : 'Data da Compra / Entrada *' }}
                 </label>
                 <input
@@ -577,19 +588,19 @@ type ViewMode = 'all-transactions' | 'card-invoices';
                   required
                   [(ngModel)]="form.date"
                   name="txDate"
-                  class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-gray-50/70 border border-gray-300 text-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600" />
               </div>
 
               @if (form.type === 'EXPENSE') {
                 <!-- Categoria (Apenas Despesas) -->
                 <div>
-                  <label class="block text-xs font-semibold text-slate-300 mb-1" for="txCategory">Categoria *</label>
+                  <label class="block text-xs font-semibold text-gray-700 mb-1" for="txCategory">Categoria *</label>
                   <select
                     id="txCategory"
                     required
                     [(ngModel)]="form.category_id"
                     name="txCategory"
-                    class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    class="w-full px-3.5 py-2.5 rounded-xl bg-gray-50/70 border border-gray-300 text-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600">
                     <option value="" disabled selected>Selecione uma categoria...</option>
                     @for (cat of expenseCategories(); track cat.id) {
                       <option [value]="cat.id">{{ cat.name }}</option>
@@ -599,14 +610,14 @@ type ViewMode = 'all-transactions' | 'card-invoices';
 
                 <!-- Forma de Pagamento (Apenas Despesas) -->
                 <div>
-                  <label class="block text-xs font-semibold text-slate-300 mb-1" for="txMethod">Forma de Pagamento *</label>
+                  <label class="block text-xs font-semibold text-gray-700 mb-1" for="txMethod">Forma de Pagamento *</label>
                   <select
                     id="txMethod"
                     required
                     [(ngModel)]="form.payment_method"
                     (ngModelChange)="onPaymentMethodChanged($event)"
                     name="txMethod"
-                    class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    class="w-full px-3.5 py-2.5 rounded-xl bg-gray-50/70 border border-gray-300 text-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600">
                     <option value="PIX">PIX</option>
                     <option value="DINHEIRO">Dinheiro</option>
                     <option value="DEBITO">Cartão de Débito</option>
@@ -617,15 +628,15 @@ type ViewMode = 'all-transactions' | 'card-invoices';
 
                 <!-- Lógica Condicional: Se for CRÉDITO -->
                 @if (form.payment_method === 'CREDITO') {
-                  <div class="p-4 rounded-2xl bg-indigo-950/30 border border-indigo-500/30 space-y-3">
+                  <div class="p-4 rounded-2xl bg-blue-50/60 border border-blue-200 space-y-3">
                     <div>
-                      <label class="block text-xs font-semibold text-indigo-300 mb-1" for="txCard">Cartão de Crédito *</label>
+                      <label class="block text-xs font-semibold text-blue-900 mb-1" for="txCard">Cartão de Crédito *</label>
                       <select
                         id="txCard"
                         required
                         [(ngModel)]="form.credit_card_id"
                         name="txCard"
-                        class="w-full px-3.5 py-2 rounded-xl bg-slate-850 border border-slate-700 text-white text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        class="w-full px-3.5 py-2 rounded-xl bg-white border border-gray-300 text-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600">
                         <option value="" disabled selected>Selecione o cartão...</option>
                         @for (c of creditCards(); track c.id) {
                           <option [value]="c.id">
@@ -636,7 +647,7 @@ type ViewMode = 'all-transactions' | 'card-invoices';
                     </div>
 
                     <div>
-                      <label class="block text-xs font-semibold text-indigo-300 mb-1" for="txInstallments">
+                      <label class="block text-xs font-semibold text-blue-900 mb-1" for="txInstallments">
                         Número de Parcelas (1 a 12)
                       </label>
                       <div class="flex items-center gap-3">
@@ -648,9 +659,9 @@ type ViewMode = 'all-transactions' | 'card-invoices';
                           step="1"
                           [(ngModel)]="form.installments"
                           name="txInstallments"
-                          class="w-24 px-3 py-1.5 rounded-xl bg-slate-850 border border-slate-700 text-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                          class="w-24 px-3 py-1.5 rounded-xl bg-white border border-gray-300 text-gray-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600" />
                         @if (form.installments > 1 && (form.amount || 0) > 0) {
-                          <span class="text-xs text-indigo-300 font-mono">
+                          <span class="text-xs text-blue-800 font-mono font-bold">
                             {{ form.installments }}x de {{ ((form.amount || 0) / form.installments) | currency: 'BRL':'symbol':'1.2-2' }}
                           </span>
                         }
@@ -659,14 +670,14 @@ type ViewMode = 'all-transactions' | 'card-invoices';
 
                     <!-- Dica de Virada de Fatura -->
                     @if (selectedCardForForm(); as card) {
-                      <p class="text-[11px] text-slate-400 leading-relaxed pt-1">
+                      <p class="text-[11px] text-gray-600 leading-relaxed pt-1">
                         💡 <strong>Virada de Fatura:</strong> O cartão <em>{{ card.name }}</em> fecha todo dia <strong>{{ card.closing_day }}</strong>.
                         @if (isPurchaseAfterClosing(form.date, card.closing_day)) {
-                          <span class="text-amber-300 block font-semibold mt-0.5">
+                          <span class="text-amber-700 block font-semibold mt-0.5">
                             A data selecionada é a partir do fechamento: a 1ª parcela entrará na fatura do mês seguinte!
                           </span>
                         } @else {
-                          <span class="text-emerald-300 block mt-0.5">
+                          <span class="text-emerald-700 block mt-0.5">
                             A compra entrará na fatura do mês atual.
                           </span>
                         }
@@ -677,12 +688,12 @@ type ViewMode = 'all-transactions' | 'card-invoices';
                   <!-- Conta Bancária (opcional para outras formas) -->
                   @if (accounts().length > 0) {
                     <div>
-                      <label class="block text-xs font-semibold text-slate-300 mb-1" for="txAccount">Conta / Carteira</label>
+                      <label class="block text-xs font-semibold text-gray-700 mb-1" for="txAccount">Conta / Carteira</label>
                       <select
                         id="txAccount"
                         [(ngModel)]="form.account_id"
                         name="txAccount"
-                        class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        class="w-full px-3.5 py-2.5 rounded-xl bg-gray-50/70 border border-gray-300 text-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600">
                         <option [ngValue]="null">Nenhuma conta associada</option>
                         @for (acc of accounts(); track acc.id) {
                           <option [value]="acc.id">{{ acc.name }} (Saldo: {{ acc.balance | currency: 'BRL':'symbol':'1.2-2' }})</option>
@@ -693,34 +704,34 @@ type ViewMode = 'all-transactions' | 'card-invoices';
                 }
 
                 <!-- Checkboxes: Despesa Fixa & Já Pago -->
-                <div class="pt-2 space-y-2 border-t border-slate-800 text-xs">
-                  <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+                <div class="pt-2 space-y-2 border-t border-gray-200 text-xs">
+                  <label class="flex items-center gap-2 cursor-pointer text-gray-700">
                     <input
                       type="checkbox"
                       [(ngModel)]="form.is_fixed"
                       name="txIsFixed"
-                      class="rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0" />
+                      class="rounded bg-white border-gray-300 text-blue-600 focus:ring-0" />
                     <span>É uma despesa fixa mensal (repete todo mês)</span>
                   </label>
 
-                  <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+                  <label class="flex items-center gap-2 cursor-pointer text-gray-700">
                     <input
                       type="checkbox"
                       [(ngModel)]="form.is_paid"
                       name="txIsPaid"
-                      class="rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0" />
+                      class="rounded bg-white border-gray-300 text-blue-600 focus:ring-0" />
                     <span>Já foi pago</span>
                   </label>
                 </div>
               } @else {
                 <!-- Se for RECEITA: Categoria de Entrada e Conta de Destino -->
                 <div>
-                  <label class="block text-xs font-semibold text-slate-300 mb-1" for="txCategoryIncome">Categoria de Entrada (Receita)</label>
+                  <label class="block text-xs font-semibold text-gray-700 mb-1" for="txCategoryIncome">Categoria de Entrada (Receita)</label>
                   <select
                     id="txCategoryIncome"
                     [(ngModel)]="form.category_id"
                     name="txCategoryIncome"
-                    class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    class="w-full px-3.5 py-2.5 rounded-xl bg-gray-50/70 border border-gray-300 text-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600">
                     <option [ngValue]="null">Sem categoria (Geral)</option>
                     @for (cat of incomeCategories(); track cat.id) {
                       <option [value]="cat.id">{{ cat.name }}</option>
@@ -730,12 +741,12 @@ type ViewMode = 'all-transactions' | 'card-invoices';
 
                 @if (accounts().length > 0) {
                   <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1" for="txAccountDest">Conta de Destino (Somar ao saldo da conta)</label>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1" for="txAccountDest">Conta de Destino (Somar ao saldo da conta)</label>
                     <select
                       id="txAccountDest"
                       [(ngModel)]="form.account_id"
                       name="txAccountDest"
-                      class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                      class="w-full px-3.5 py-2.5 rounded-xl bg-gray-50/70 border border-gray-300 text-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600">
                       <option [ngValue]="null">Nenhuma conta (Não alterar saldo)</option>
                       @for (acc of accounts(); track acc.id) {
                         <option [value]="acc.id">{{ acc.name }} (Saldo atual: {{ acc.balance | currency: 'BRL':'symbol':'1.2-2' }})</option>
@@ -746,17 +757,17 @@ type ViewMode = 'all-transactions' | 'card-invoices';
               }
 
               <!-- Ações do Modal -->
-              <div class="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+              <div class="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
                 <button
                   type="button"
                   (click)="showNewModal.set(false)"
-                  class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white bg-slate-800/60 hover:bg-slate-800 transition-colors">
+                  class="px-4 py-2 rounded-xl text-xs font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 transition-colors">
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   [disabled]="!isFormValid() || isSaving()"
-                  class="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-950 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 transition-all shadow-md shadow-emerald-500/20">
+                  class="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition-all shadow-xs">
                   {{ isSaving() ? 'Salvando...' : 'Salvar Lançamento' }}
                 </button>
               </div>
@@ -770,6 +781,7 @@ type ViewMode = 'all-transactions' | 'card-invoices';
 export class TransactionsPageComponent implements OnInit {
   private readonly transactionService = inject(TransactionService);
   private readonly financeSetupService = inject(FinanceSetupService);
+  private readonly toastService = inject(ToastService);
 
   // Estados principais
   activeView = signal<ViewMode>('all-transactions');
@@ -999,16 +1011,25 @@ export class TransactionsPageComponent implements OnInit {
   }
 
   async deleteTransaction(tx: TransactionDetail): Promise<void> {
-    if (!confirm(`Deseja excluir o lançamento "${tx.description}"?`)) return;
+    const confirmed = await this.toastService.confirm({
+      title: 'Excluir Lançamento',
+      message: `Deseja realmente excluir o lançamento "${tx.description}"? Esta ação não pode ser desfeita.`,
+      confirmText: 'Excluir',
+      cancelText: 'Cancelar',
+      isDestructive: true,
+    });
+    if (!confirmed) return;
 
     try {
       await this.transactionService.deleteTransaction(tx.id);
       this.transactions.update((list) => list.filter((item) => item.id !== tx.id));
+      this.toastService.success('Lançamento excluído com sucesso!');
       this.feedback.set({
         type: 'success',
         text: 'Lançamento excluído com sucesso!',
       });
     } catch (err: any) {
+      this.toastService.error('Erro ao excluir lançamento: ' + err.message);
       this.feedback.set({
         type: 'error',
         text: 'Erro ao excluir lançamento: ' + err.message,

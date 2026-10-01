@@ -15,6 +15,7 @@ import {
 } from '../services/ai-assistant.service';
 import { FinanceSetupService } from '../services/finance-setup.service';
 import { TransactionService } from '../services/transaction.service';
+import { ToastService } from '../../../core/services/toast.service';
 
 @Component({
   selector: 'app-ai-chat',
@@ -27,7 +28,7 @@ import { TransactionService } from '../services/transaction.service';
         type="button"
         (click)="toggleChat()"
         [title]="isOpen() ? 'Fechar Assistente IA' : 'Abrir Assistente AI'"
-        class="relative group flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500 text-white font-bold text-xs shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-105 active:scale-95 transition-all">
+        class="relative group flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 active:scale-95 transition-all">
         <div class="relative flex items-center justify-center">
           <svg class="w-5 h-5 text-white animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -45,32 +46,32 @@ import { TransactionService } from '../services/transaction.service';
     @if (isOpen()) {
       <div
         (click)="closeChat()"
-        class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-40 transition-opacity"></div>
+        class="fixed inset-0 bg-gray-950/40 backdrop-blur-xs z-40 transition-opacity"></div>
     }
 
     <!-- 3. Drawer Deslizante Lateral -->
     <div
       [class.translate-x-0]="isOpen()"
       [class.translate-x-full]="!isOpen()"
-      class="fixed inset-y-0 right-0 z-50 w-full sm:w-[480px] bg-slate-900/95 border-l border-slate-800 shadow-2xl backdrop-blur-xl flex flex-col transition-transform duration-300 ease-in-out">
+      class="fixed inset-y-0 right-0 z-50 w-full sm:w-[480px] bg-white border-l border-gray-200 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out">
       
       <!-- Topo do Drawer: Header com Status e Fechar -->
-      <div class="p-4 sm:p-5 border-b border-slate-800/80 bg-slate-950/50 flex items-center justify-between">
+      <div class="p-4 sm:p-5 border-b border-gray-200 bg-gray-50/80 flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-emerald-400 flex items-center justify-center text-slate-950 font-black shadow-md shadow-indigo-500/20">
-            <svg class="w-5 h-5 text-slate-950" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <div class="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200/60 flex items-center justify-center text-blue-700 font-black shadow-2xs">
+            <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </div>
           <div>
             <div class="flex items-center gap-2">
-              <h2 class="text-sm font-bold text-white tracking-tight">Assistente Financeiro</h2>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+              <h2 class="text-sm font-bold text-gray-900 tracking-tight">Assistente Financeiro</h2>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200/60">
                 Gemini 3.5 Flash
               </span>
             </div>
-            <p class="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            <p class="text-[11px] text-gray-500 flex items-center gap-1.5 mt-0.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
               <span>Contexto financeiro em tempo real</span>
             </p>
           </div>
@@ -79,7 +80,7 @@ import { TransactionService } from '../services/transaction.service';
         <button
           type="button"
           (click)="closeChat()"
-          class="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+          class="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -95,7 +96,7 @@ import { TransactionService } from '../services/transaction.service';
             class="flex items-start gap-2.5">
             
             @if (msg.role === 'model') {
-              <div class="w-7 h-7 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center flex-shrink-0 text-indigo-400 mt-0.5">
+              <div class="w-7 h-7 rounded-lg bg-blue-50 border border-blue-200/60 flex items-center justify-center flex-shrink-0 text-blue-600 mt-0.5">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
@@ -103,42 +104,42 @@ import { TransactionService } from '../services/transaction.service';
             }
 
             <div
-              [class.bg-indigo-600]="msg.role === 'user'"
+              [class.bg-blue-600]="msg.role === 'user'"
               [class.text-white]="msg.role === 'user'"
               [class.rounded-br-sm]="msg.role === 'user'"
-              [class.bg-slate-800/80]="msg.role === 'model'"
+              [class.bg-gray-100]="msg.role === 'model'"
               [class.border]="msg.role === 'model'"
-              [class.border-slate-700/60]="msg.role === 'model'"
-              [class.text-slate-200]="msg.role === 'model'"
+              [class.border-gray-200]="msg.role === 'model'"
+              [class.text-gray-900]="msg.role === 'model'"
               [class.rounded-bl-sm]="msg.role === 'model'"
-              class="max-w-[85%] p-3.5 rounded-2xl shadow-md space-y-2 leading-relaxed">
+              class="max-w-[85%] p-3.5 rounded-2xl shadow-xs space-y-2 leading-relaxed">
               
               <!-- Texto da Mensagem (formatado com quebras de linha) -->
               <div class="whitespace-pre-wrap select-text break-words">
                 {{ msg.text }}
                 @if (msg.isStreaming) {
-                  <span class="inline-block w-1.5 h-3.5 bg-emerald-400 ml-1 animate-pulse align-middle"></span>
+                  <span class="inline-block w-1.5 h-3.5 bg-blue-600 ml-1 animate-pulse align-middle"></span>
                 }
               </div>
 
               <!-- Card Especial: Comprovante Reconhecido -->
               @if (msg.receiptData; as receipt) {
-                <div class="mt-2.5 p-3 rounded-xl bg-slate-900/90 border border-emerald-500/30 space-y-2">
+                <div class="mt-2.5 p-3 rounded-xl bg-emerald-50 border border-emerald-200 space-y-2">
                   <div class="flex items-center justify-between text-[11px]">
-                    <span class="font-bold text-emerald-400 flex items-center gap-1">
+                    <span class="font-bold text-emerald-800 flex items-center gap-1">
                       <span>✓ Comprovante Lido com Sucesso</span>
                     </span>
-                    <span class="font-mono text-slate-400">{{ receipt.date }}</span>
+                    <span class="font-mono text-gray-500">{{ receipt.date }}</span>
                   </div>
 
                   <div class="text-xs space-y-0.5">
-                    <p class="font-bold text-white">{{ receipt.description }}</p>
-                    <p class="text-slate-400">
-                      Valor: <strong class="text-emerald-400 font-mono">{{ receipt.amount | currency: 'BRL':'symbol':'1.2-2' }}</strong>
+                    <p class="font-bold text-gray-900">{{ receipt.description }}</p>
+                    <p class="text-gray-600">
+                      Valor: <strong class="text-emerald-700 font-mono">{{ receipt.amount | currency: 'BRL':'symbol':'1.2-2' }}</strong>
                     </p>
                     @if (receipt.suggested_category_name) {
-                      <p class="text-[11px] text-slate-400">
-                        Categoria sugerida: <span class="text-slate-300 font-medium">{{ receipt.suggested_category_name }}</span>
+                      <p class="text-[11px] text-gray-500">
+                        Categoria sugerida: <span class="text-gray-800 font-medium">{{ receipt.suggested_category_name }}</span>
                       </p>
                     }
                   </div>
@@ -146,13 +147,16 @@ import { TransactionService } from '../services/transaction.service';
                   <button
                     type="button"
                     (click)="openModalFromReceipt(receipt)"
-                    class="w-full mt-1 px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-[11px] transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20">
+                    class="w-full mt-1 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] transition-all flex items-center justify-center gap-1.5 shadow-xs">
                     <span>Revisar e Salvar Lançamento →</span>
                   </button>
                 </div>
               }
 
-              <div class="text-[9px] text-slate-400 text-right">
+              <div
+                [class.text-blue-100]="msg.role === 'user'"
+                [class.text-gray-400]="msg.role === 'model'"
+                class="text-[9px] text-right">
                 {{ msg.timestamp | date: 'HH:mm' }}
               </div>
             </div>
@@ -162,13 +166,13 @@ import { TransactionService } from '../services/transaction.service';
         <!-- Indicador de Análise de Comprovante -->
         @if (isAnalyzingReceipt()) {
           <div class="flex items-start gap-2.5">
-            <div class="w-7 h-7 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center flex-shrink-0 text-indigo-400 animate-spin">
+            <div class="w-7 h-7 rounded-lg bg-blue-50 border border-blue-200/60 flex items-center justify-center flex-shrink-0 text-blue-600 animate-spin">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </div>
-            <div class="p-3.5 rounded-2xl rounded-bl-sm bg-slate-800/80 border border-slate-700/60 text-slate-300 flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-indigo-400 animate-ping"></span>
+            <div class="p-3.5 rounded-2xl rounded-bl-sm bg-gray-100 border border-gray-200 text-gray-700 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-blue-600 animate-ping"></span>
               <span>Analisando comprovante com visão computacional do Gemini...</span>
             </div>
           </div>
@@ -177,30 +181,30 @@ import { TransactionService } from '../services/transaction.service';
 
       <!-- Sugestões Rápidas de Perguntas -->
       @if (messages().length <= 2 && !isStreaming()) {
-        <div class="px-4 py-2 bg-slate-950/40 border-t border-slate-800/60 overflow-x-auto flex items-center gap-1.5 no-scrollbar">
+        <div class="px-4 py-2 bg-gray-50/80 border-t border-gray-200 overflow-x-auto flex items-center gap-1.5 no-scrollbar">
           <button
             type="button"
             (click)="askQuickQuestion('Como está meu teto de gastos do mês?')"
-            class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] text-slate-300 whitespace-nowrap transition-colors">
+            class="px-2.5 py-1 rounded-full bg-white hover:bg-gray-100 border border-gray-200 text-[10px] text-gray-700 font-medium whitespace-nowrap transition-colors shadow-2xs">
             📊 Meu teto de gastos?
           </button>
           <button
             type="button"
             (click)="askQuickQuestion('Posso gastar R$ 150 em lazer hoje?')"
-            class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] text-slate-300 whitespace-nowrap transition-colors">
+            class="px-2.5 py-1 rounded-full bg-white hover:bg-gray-100 border border-gray-200 text-[10px] text-gray-700 font-medium whitespace-nowrap transition-colors shadow-2xs">
             🍕 Posso gastar R$ 150 em lazer?
           </button>
           <button
             type="button"
             (click)="askQuickQuestion('Onde mais gastei dinheiro este mês?')"
-            class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] text-slate-300 whitespace-nowrap transition-colors">
+            class="px-2.5 py-1 rounded-full bg-white hover:bg-gray-100 border border-gray-200 text-[10px] text-gray-700 font-medium whitespace-nowrap transition-colors shadow-2xs">
             🔍 Onde mais gastei?
           </button>
         </div>
       }
 
       <!-- Rodapé: Campo de Texto, Câmera & Anexo de Comprovante -->
-      <div class="p-4 border-t border-slate-800/80 bg-slate-950/70 space-y-2">
+      <div class="p-4 border-t border-gray-200 bg-white space-y-2">
         <form (ngSubmit)="handleSendMessage()" class="flex items-center gap-2">
           <!-- Input oculto para carregar imagem da galeria/arquivos -->
           <input
@@ -225,7 +229,7 @@ import { TransactionService } from '../services/transaction.service';
             (click)="openCamera()"
             [disabled]="isStreaming() || isAnalyzingReceipt()"
             title="Tirar foto de um comprovante com a câmera"
-            class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-300 hover:text-emerald-400 border border-slate-700 transition-colors flex items-center justify-center">
+            class="p-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-600 hover:text-blue-700 border border-gray-200 transition-colors flex items-center justify-center">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
               <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -238,7 +242,7 @@ import { TransactionService } from '../services/transaction.service';
             (click)="triggerFileInput()"
             [disabled]="isStreaming() || isAnalyzingReceipt()"
             title="Anexar comprovante da galeria ou arquivo"
-            class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-300 hover:text-indigo-400 border border-slate-700 transition-colors flex items-center justify-center">
+            class="p-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-600 hover:text-blue-700 border border-gray-200 transition-colors flex items-center justify-center">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
             </svg>
@@ -251,13 +255,13 @@ import { TransactionService } from '../services/transaction.service';
             name="chatInput"
             [disabled]="isStreaming() || isAnalyzingReceipt()"
             placeholder="Pergunte ao Gemini ou anexe um comprovante..."
-            class="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            class="flex-1 px-3.5 py-2.5 rounded-xl bg-gray-50/80 border border-gray-300 text-gray-900 text-xs placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600" />
 
           <!-- Botão Enviar -->
           <button
             type="submit"
             [disabled]="!userInput.trim() || isStreaming() || isAnalyzingReceipt()"
-            class="p-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 disabled:opacity-40 text-slate-950 transition-all font-bold">
+            class="p-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white transition-all font-bold shadow-xs">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>
@@ -268,37 +272,37 @@ import { TransactionService } from '../services/transaction.service';
 
     <!-- 4. Modal de Câmera ao Vivo para Tirar Foto -->
     @if (showCameraModal()) {
-      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
-        <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-          <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-950/60 backdrop-blur-xs">
+        <div class="w-full max-w-md bg-white border border-gray-200 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div class="p-4 border-b border-gray-200 flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              <h3 class="text-sm font-bold text-white">Fotografar Comprovante</h3>
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <h3 class="text-sm font-bold text-gray-900">Fotografar Comprovante</h3>
             </div>
             <button
               type="button"
               (click)="closeCamera()"
-              class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+              class="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
               ✕
             </button>
           </div>
 
           <div class="p-4 space-y-4">
             <!-- Visualizador de Vídeo da Câmera -->
-            <div class="relative rounded-2xl overflow-hidden bg-black aspect-[4/3] flex items-center justify-center border border-slate-800 shadow-inner">
+            <div class="relative rounded-2xl overflow-hidden bg-black aspect-[4/3] flex items-center justify-center border border-gray-300 shadow-inner">
               <video #videoElement autoplay playsinline class="w-full h-full object-cover"></video>
               <canvas #canvasElement class="hidden"></canvas>
 
               <!-- Guia visual para enquadrar comprovante -->
-              <div class="absolute inset-4 border-2 border-dashed border-emerald-400/50 rounded-xl pointer-events-none flex items-center justify-center">
-                <span class="text-[10px] font-semibold text-emerald-300 bg-slate-950/70 backdrop-blur-xs px-2.5 py-1 rounded-full border border-emerald-500/20">
+              <div class="absolute inset-4 border-2 border-dashed border-emerald-400/70 rounded-xl pointer-events-none flex items-center justify-center">
+                <span class="text-[10px] font-semibold text-emerald-800 bg-white/90 backdrop-blur-xs px-2.5 py-1 rounded-full border border-emerald-300 shadow-xs">
                   Enquadre o comprovante aqui
                 </span>
               </div>
             </div>
 
             @if (cameraError()) {
-              <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs leading-relaxed">
+              <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs leading-relaxed">
                 {{ cameraError() }}
               </div>
             }
@@ -308,15 +312,15 @@ import { TransactionService } from '../services/transaction.service';
               <button
                 type="button"
                 (click)="triggerNativeCamera()"
-                class="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition-colors">
+                class="px-3.5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-xs font-semibold text-gray-700 transition-colors">
                 Câmera do Celular
               </button>
 
               <button
                 type="button"
                 (click)="capturePhoto()"
-                class="flex-1 px-4 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-all shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2">
-                <svg class="w-4 h-4 text-slate-950" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                class="flex-1 px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-all shadow-xs flex items-center justify-center gap-2">
+                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
@@ -330,43 +334,45 @@ import { TransactionService } from '../services/transaction.service';
 
     <!-- 5. Modal de Novo Lançamento Acionado pelo Chat ou Diretamente -->
     @if (showTransactionModal()) {
-      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-        <div class="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 my-8 animate-in fade-in zoom-in-95 duration-200">
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-950/40 backdrop-blur-xs overflow-y-auto">
+        <div class="w-full max-w-lg bg-white border border-gray-200 rounded-3xl shadow-2xl p-6 sm:p-8 my-8 animate-in fade-in zoom-in-95 duration-200">
           
           <div class="flex items-center justify-between mb-4">
             <div>
-              <h3 class="text-lg font-bold text-white flex items-center gap-2">
+              <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <span>Novo Lançamento</span>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200/60">
                   Pré-preenchido por IA
                 </span>
               </h3>
-              <p class="text-xs text-slate-400 mt-0.5">Revise os dados antes de salvar no sistema.</p>
+              <p class="text-xs text-gray-500 mt-0.5">Revise os dados antes de salvar no sistema.</p>
             </div>
             <button
               type="button"
               (click)="closeTransactionModal()"
-              class="p-2 rounded-xl text-slate-400 hover:text-white bg-slate-800/60 hover:bg-slate-800">
+              class="p-2 rounded-xl text-gray-400 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors">
               ✕
             </button>
           </div>
 
           <!-- Tipo: Despesa ou Receita -->
-          <div class="flex p-1 bg-slate-800 rounded-2xl mb-5">
+          <div class="flex p-1 bg-gray-100 rounded-2xl mb-5">
             <button
               type="button"
               (click)="modalForm.type = 'EXPENSE'"
               [class.bg-rose-500]="modalForm.type === 'EXPENSE'"
               [class.text-white]="modalForm.type === 'EXPENSE'"
-              class="flex-1 py-2 text-center rounded-xl text-xs font-bold transition-all text-slate-400">
+              [class.shadow-2xs]="modalForm.type === 'EXPENSE'"
+              class="flex-1 py-2 text-center rounded-xl text-xs font-bold transition-all text-gray-600 hover:text-gray-900">
               ↓ Despesa
             </button>
             <button
               type="button"
               (click)="modalForm.type = 'INCOME'"
-              [class.bg-emerald-500]="modalForm.type === 'INCOME'"
-              [class.text-slate-950]="modalForm.type === 'INCOME'"
-              class="flex-1 py-2 text-center rounded-xl text-xs font-bold transition-all text-slate-400">
+              [class.bg-emerald-600]="modalForm.type === 'INCOME'"
+              [class.text-white]="modalForm.type === 'INCOME'"
+              [class.shadow-2xs]="modalForm.type === 'INCOME'"
+              class="flex-1 py-2 text-center rounded-xl text-xs font-bold transition-all text-gray-600 hover:text-gray-900">
               ↑ Receita
             </button>
           </div>
@@ -374,9 +380,9 @@ import { TransactionService } from '../services/transaction.service';
           <form (ngSubmit)="handleSaveFromModal()" class="space-y-4">
             <!-- Valor -->
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1" for="modalAmount">Valor *</label>
+              <label class="block text-xs font-semibold text-gray-700 mb-1" for="modalAmount">Valor *</label>
               <div class="relative">
-                <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">R$</span>
+                <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400">R$</span>
                 <input
                   id="modalAmount"
                   type="number"
@@ -385,42 +391,42 @@ import { TransactionService } from '../services/transaction.service';
                   required
                   [(ngModel)]="modalForm.amount"
                   name="modalAmount"
-                  class="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-800 border border-slate-700 text-white font-mono text-lg font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  class="w-full pl-10 pr-4 py-3 rounded-2xl bg-gray-50/70 border border-gray-300 text-gray-900 font-mono text-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600" />
               </div>
             </div>
 
             <!-- Descrição -->
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1" for="modalDesc">Descrição *</label>
+              <label class="block text-xs font-semibold text-gray-700 mb-1" for="modalDesc">Descrição *</label>
               <input
                 id="modalDesc"
                 type="text"
                 required
                 [(ngModel)]="modalForm.description"
                 name="modalDesc"
-                class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                class="w-full px-3.5 py-2.5 rounded-xl bg-gray-50/70 border border-gray-300 text-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600" />
             </div>
 
             <!-- Data -->
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1" for="modalDate">Data *</label>
+              <label class="block text-xs font-semibold text-gray-700 mb-1" for="modalDate">Data *</label>
               <input
                 id="modalDate"
                 type="date"
                 required
                 [(ngModel)]="modalForm.date"
                 name="modalDate"
-                class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                class="w-full px-3.5 py-2.5 rounded-xl bg-gray-50/70 border border-gray-300 text-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600" />
             </div>
 
             <!-- Categoria -->
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1" for="modalCategory">Categoria</label>
+              <label class="block text-xs font-semibold text-gray-700 mb-1" for="modalCategory">Categoria</label>
               <select
                 id="modalCategory"
                 [(ngModel)]="modalForm.category_id"
                 name="modalCategory"
-                class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                class="w-full px-3.5 py-2.5 rounded-xl bg-gray-50/70 border border-gray-300 text-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600">
                 <option value="">Sem categoria (Geral)</option>
                 @for (c of availableCategories(); track c.id) {
                   <option [value]="c.id">{{ c.name }}</option>
@@ -430,12 +436,12 @@ import { TransactionService } from '../services/transaction.service';
 
             <!-- Forma de Pagamento -->
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1" for="modalMethod">Forma de Pagamento</label>
+              <label class="block text-xs font-semibold text-gray-700 mb-1" for="modalMethod">Forma de Pagamento</label>
               <select
                 id="modalMethod"
                 [(ngModel)]="modalForm.payment_method"
                 name="modalMethod"
-                class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                class="w-full px-3.5 py-2.5 rounded-xl bg-gray-50/70 border border-gray-300 text-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600">
                 <option value="PIX">PIX</option>
                 <option value="DINHEIRO">Dinheiro</option>
                 <option value="DEBITO">Cartão de Débito</option>
@@ -447,12 +453,12 @@ import { TransactionService } from '../services/transaction.service';
             <!-- Conta Bancária (se não for crédito) -->
             @if (modalForm.payment_method !== 'CREDITO' && accounts().length > 0) {
               <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1" for="modalAccount">Conta Financeira</label>
+                <label class="block text-xs font-semibold text-gray-700 mb-1" for="modalAccount">Conta Financeira</label>
                 <select
                   id="modalAccount"
                   [(ngModel)]="modalForm.account_id"
                   name="modalAccount"
-                  class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-gray-50/70 border border-gray-300 text-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600">
                   <option [ngValue]="null">Nenhuma conta associada</option>
                   @for (acc of accounts(); track acc.id) {
                     <option [value]="acc.id">{{ acc.name }} (Saldo: {{ acc.balance | currency: 'BRL':'symbol':'1.2-2' }})</option>
@@ -462,17 +468,17 @@ import { TransactionService } from '../services/transaction.service';
             }
 
             <!-- Botões de Ação do Modal -->
-            <div class="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+            <div class="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
               <button
                 type="button"
                 (click)="closeTransactionModal()"
-                class="px-4 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white bg-slate-800/60 hover:bg-slate-800 transition-colors">
+                class="px-4 py-2.5 rounded-xl text-xs font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 transition-colors">
                 Cancelar
               </button>
               <button
                 type="submit"
                 [disabled]="!modalForm.amount || !modalForm.description || isSaving()"
-                class="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-950 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 transition-all shadow-md shadow-emerald-500/20">
+                class="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition-all shadow-xs">
                 {{ isSaving() ? 'Gravando...' : 'Confirmar e Salvar' }}
               </button>
             </div>
@@ -486,6 +492,7 @@ export class AiChatComponent implements OnInit, OnDestroy {
   private readonly aiService = inject(AiAssistantService);
   private readonly transactionService = inject(TransactionService);
   private readonly setupService = inject(FinanceSetupService);
+  private readonly toastService = inject(ToastService);
 
   @ViewChild('messagesContainer') private messagesContainer?: ElementRef;
   @ViewChild('fileInput') private fileInput?: ElementRef<HTMLInputElement>;
@@ -899,9 +906,10 @@ export class AiChatComponent implements OnInit, OnDestroy {
           timestamp: new Date(),
         },
       ]);
+      this.toastService.success(`Lançamento "${this.modalForm.description}" registrado com sucesso!`);
       this.scrollToBottom();
     } catch (err: any) {
-      alert('Erro ao salvar lançamento: ' + err.message);
+      this.toastService.error('Erro ao salvar lançamento: ' + err.message);
     } finally {
       this.isSaving.set(false);
     }

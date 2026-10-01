@@ -17,72 +17,71 @@ export interface NavItem {
   standalone: true,
   imports: [CommonModule, RouterModule, AiChatComponent],
   template: `
-    <div class="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      <!-- 1. Top Navbar -->
-      <header class="h-16 bg-slate-900/80 backdrop-blur-md border-b border-slate-800/80 sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6">
-        <div class="flex items-center gap-4">
-          <!-- Botão Toggle Mobile Sidebar -->
+    <div class="min-h-screen bg-gray-50/60 text-gray-900 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
+      <!-- 1. Top Navbar Executiva -->
+      <header class="h-16 bg-white/95 backdrop-blur-md border-b border-gray-200/80 sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6">
+        <div class="flex items-center gap-3 sm:gap-4">
+          <!-- Botão Toggle Mobile Sidebar (Drawer) -->
           <button
+            type="button"
             (click)="toggleSidebar()"
-            class="md:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
-            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            class="md:hidden p-2 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+            aria-label="Abrir menu">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
 
           <!-- Logo Brand -->
-          <div (click)="goToHub()" class="flex items-center gap-3 cursor-pointer group">
-            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center text-slate-950 font-black shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+          <div (click)="goToHub()" class="flex items-center gap-2.5 cursor-pointer group">
+            <div class="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black shadow-sm shadow-blue-500/25 group-hover:scale-105 transition-transform">
               <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
             </div>
             <div class="hidden sm:block">
-              <span class="text-base font-bold text-white tracking-tight leading-none">iFinance <span class="text-emerald-400">Capital</span></span>
+              <span class="text-base font-bold text-gray-900 tracking-tight leading-none">iFinance <span class="text-blue-600">Capital</span></span>
             </div>
           </div>
 
-          <div class="h-5 w-px bg-slate-800 hidden sm:block"></div>
+          <div class="h-5 w-px bg-gray-200 hidden sm:block"></div>
 
           <!-- Indicador do Módulo Ativo -->
           <div class="flex items-center gap-2">
             <span
-              [class.bg-emerald-500/10]="isInvestments()"
-              [class.text-emerald-400]="isInvestments()"
-              [class.border-emerald-500/20]="isInvestments()"
-              [class.bg-indigo-500/10]="!isInvestments()"
-              [class.text-indigo-400]="!isInvestments()"
-              [class.border-indigo-500/20]="!isInvestments()"
-              class="px-2.5 py-1 rounded-full text-xs font-semibold border flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full" [class.bg-emerald-400]="isInvestments()" [class.bg-indigo-400]="!isInvestments()"></span>
+              class="px-2.5 py-1 rounded-full text-xs font-semibold border flex items-center gap-1.5 bg-blue-50 text-blue-700 border-blue-200/60">
+              <span class="w-2 h-2 rounded-full bg-blue-600"></span>
               {{ moduleTitle() }}
             </span>
 
             <button
+              type="button"
               (click)="goToHub()"
-              class="text-xs text-slate-400 hover:text-slate-200 underline decoration-slate-600 hover:decoration-slate-400 transition-colors ml-1">
+              class="text-xs text-gray-500 hover:text-blue-600 underline decoration-gray-300 hover:decoration-blue-400 transition-colors ml-1 hidden sm:inline-block">
               Trocar Módulo
             </button>
           </div>
         </div>
 
         <!-- Ações do Usuário e Logout -->
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 sm:gap-3">
           <div class="hidden md:flex flex-col text-right">
-            <span class="text-xs font-medium text-slate-200">{{ userEmail() }}</span>
-            <span class="text-[10px] text-slate-500">Investidor Autenticado</span>
+            <span class="text-xs font-semibold text-gray-800">{{ userEmail() }}</span>
+            <span class="text-[10px] text-gray-500">Investidor Autenticado</span>
           </div>
 
-          <div class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-emerald-400">
+          <div class="w-8 h-8 rounded-full bg-blue-50 border border-blue-200/80 flex items-center justify-center text-xs font-bold text-blue-700">
             {{ userInitial() }}
           </div>
 
           <button
+            type="button"
             (click)="logout()"
             title="Sair da Conta"
-            class="p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors">
-            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            class="p-2 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+            aria-label="Sair da conta">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
           </button>
         </div>
@@ -94,19 +93,19 @@ export interface NavItem {
         @if (sidebarOpen()) {
           <div
             (click)="toggleSidebar()"
-            class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-30 md:hidden"></div>
+            class="fixed inset-0 bg-gray-950/30 backdrop-blur-xs z-30 md:hidden transition-opacity"></div>
         }
 
-        <!-- 2. Sidebar Lateral Dinâmica -->
+        <!-- 2. Sidebar Lateral Desktop / Mobile Drawer -->
         <aside
           [class.translate-x-0]="sidebarOpen()"
           [class.-translate-x-full]="!sidebarOpen()"
-          class="fixed md:static inset-y-0 left-0 z-40 w-64 bg-slate-900/90 md:bg-slate-900/50 border-r border-slate-800/80 p-4 flex flex-col justify-between transition-transform duration-300 ease-in-out md:translate-x-0">
+          class="fixed md:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200/80 p-4 flex flex-col justify-between transition-transform duration-300 ease-in-out md:translate-x-0 shadow-sm md:shadow-none">
           
           <div>
             <!-- Título do Menu da Seção -->
             <div class="px-3 mb-4">
-              <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+              <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
                 Navegação {{ isInvestments() ? 'de Investimentos' : 'Financeira' }}
               </span>
             </div>
@@ -116,16 +115,16 @@ export interface NavItem {
               @for (item of currentNavItems(); track item.path) {
                 <a
                   [routerLink]="item.path"
-                  routerLinkActive="bg-emerald-500/15 text-emerald-300 font-semibold border-emerald-500/40"
+                  routerLinkActive="bg-blue-50 text-blue-700 font-semibold border-blue-200/80 shadow-2xs"
                   [routerLinkActiveOptions]="{ exact: false }"
                   (click)="closeSidebarOnMobile()"
-                  class="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-100 hover:bg-slate-800/70 border border-transparent transition-all group">
+                  class="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 border border-transparent transition-all group">
                   <div class="flex items-center gap-3">
-                    <span class="text-slate-400 group-hover:text-emerald-400 transition-colors" [innerHTML]="item.icon"></span>
+                    <span class="text-gray-400 group-hover:text-blue-600 transition-colors" [innerHTML]="item.icon"></span>
                     <span>{{ item.label }}</span>
                   </div>
                   @if (item.badge) {
-                    <span class="px-2 py-0.5 text-[10px] rounded-full font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    <span class="px-2 py-0.5 text-[10px] rounded-full font-bold bg-blue-100/70 text-blue-700 border border-blue-200/60">
                       {{ item.badge }}
                     </span>
                   }
@@ -135,27 +134,54 @@ export interface NavItem {
           </div>
 
           <!-- Rodapé da Sidebar: Acesso Rápido ao Hub -->
-          <div class="pt-4 border-t border-slate-800/80">
+          <div class="pt-4 border-t border-gray-200/80 space-y-2">
             <button
+              type="button"
               (click)="goToHub()"
-              class="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 text-xs font-medium text-slate-300 hover:text-white border border-slate-700/60 transition-all">
-              <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              class="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 text-xs font-medium text-gray-700 hover:text-gray-900 border border-gray-200 transition-all">
+              <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
               </svg>
-              <span>Voltar à Central (Hub)</span>
+              <span>Central (Hub)</span>
             </button>
           </div>
         </aside>
 
         <!-- 3. Área de Conteúdo da Página -->
-        <main class="flex-1 overflow-y-auto bg-slate-950 p-4 sm:p-6 lg:p-8">
+        <main class="flex-1 overflow-y-auto bg-gray-50/60 p-4 sm:p-6 lg:p-8 pb-20 md:pb-8">
           <div class="max-w-7xl mx-auto">
             <router-outlet></router-outlet>
           </div>
         </main>
       </div>
 
-      <!-- 4. Assistente de IA Gemini (visível nas telas da área financeira) -->
+      <!-- 4. Bottom Navigation Bar para Mobile (PWA Touch Experience) -->
+      <nav
+        class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200/80 px-2 py-1.5 flex items-center justify-around shadow-lg shadow-gray-200/50"
+        aria-label="Navegação móvel">
+        @for (item of currentNavItems(); track item.path) {
+          <a
+            [routerLink]="item.path"
+            routerLinkActive="text-blue-600 font-bold"
+            [routerLinkActiveOptions]="{ exact: false }"
+            class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] py-1 px-2 rounded-xl text-gray-500 hover:text-blue-600 transition-colors">
+            <span class="w-5 h-5 flex items-center justify-center" [innerHTML]="item.icon"></span>
+            <span class="text-[10px] mt-0.5 tracking-tight truncate max-w-[70px]">{{ item.label.split(' ')[0] }}</span>
+          </a>
+        }
+        <button
+          type="button"
+          (click)="goToHub()"
+          class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] py-1 px-2 rounded-xl text-gray-500 hover:text-blue-600 transition-colors"
+          aria-label="Ir para a Central Hub">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+          <span class="text-[10px] mt-0.5 tracking-tight">Hub</span>
+        </button>
+      </nav>
+
+      <!-- 5. Assistente de IA Gemini (visível nas telas da área financeira) -->
       @if (!isInvestments()) {
         <app-ai-chat></app-ai-chat>
       }

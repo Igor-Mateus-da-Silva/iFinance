@@ -1,0 +1,37 @@
+{
+  "name": "iFinance Capital - Gestão Financeira & Investimentos",
+  "short_name": "iFinance",
+  "description": "Controle financeiro executivo, metodologia 50/30/20 e inteligência de aportes",
+  "start_url": "/",
+  "id": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#FFFFFF",
+  "theme_color": "#1E40AF",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon",
+      "purpose": "any"
+    }
+  ],
+  "categories": [
+    "finance",
+    "productivity",
+    "business"
+  ]
+}

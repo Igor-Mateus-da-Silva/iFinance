@@ -58,11 +58,28 @@ export class SupabaseService {
 
     // Ouvinte reativo para login, logout e renovação de token
     this.supabase.auth.onAuthStateChange(
-      (_event: AuthChangeEvent, session: Session | null) => {
+      async (event: AuthChangeEvent, session: Session | null) => {
         this.currentSession.set(session);
         this.currentUser.set(session?.user ?? null);
+        if (event === 'SIGNED_OUT') {
+          await this.clearAppCaches();
+        }
       }
     );
+  }
+
+  /**
+   * Limpa todo o CacheStorage do Service Worker no navegador para expurgar dados
+   */
+  private async clearAppCaches(): Promise<void> {
+    try {
+      if (typeof window !== 'undefined' && 'caches' in window) {
+        const keys = await window.caches.keys();
+        await Promise.all(keys.map((k) => window.caches.delete(k)));
+      }
+    } catch (err) {
+      console.warn('Erro ao limpar CacheStorage:', err);
+    }
   }
 
   /**
@@ -104,6 +121,7 @@ export class SupabaseService {
   }
 
   async signOut(): Promise<void> {
+    await this.clearAppCaches();
     const { error } = await this.supabase.auth.signOut();
     if (error) throw error;
     this.currentSession.set(null);

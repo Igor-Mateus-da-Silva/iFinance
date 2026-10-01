@@ -1,3 +1,61 @@
-/* You can add global styles to this file, and also import other style files */
-
 @import 'tailwindcss';
+
+@layer base {
+  :root {
+    --royal-blue: #1E40AF;
+    --royal-blue-hover: #1D4ED8;
+    --royal-blue-light: #EFF6FF;
+    --royal-blue-border: #BFDBFE;
+  }
+
+  html, body {
+    background-color: #F9FAFB;
+    color: #111827;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Scrollbar fina minimalista executiva */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #E5E7EB;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #D1D5DB;
+  }
+
+  /* Padrão para inputs limpos */
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #2563EB !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+  }
+}
+
+/* Utilitários Executivos Reutilizáveis */
+.btn-royal {
+  background-color: #1E40AF;
+  color: #FFFFFF;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  transition: all 0.2s ease-in-out;
+}
+.btn-royal:hover {
+  background-color: #1D4ED8;
+  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2);
+}
+
+.card-executive {
+  background-color: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+}

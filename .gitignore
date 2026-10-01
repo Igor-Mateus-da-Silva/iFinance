@@ -77,3 +77,9 @@ ehthumbs.db
 Thumbs.db
 [Dd]esktop.ini
 $RECYCLE.BIN/
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+
