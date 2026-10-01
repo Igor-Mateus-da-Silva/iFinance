@@ -18,6 +18,7 @@ lerna-debug.log*
 *.log
 
 # Sensitive Environment files & Credentials (NUNCA COMMITAR)
+/src/environments/environment.ts
 /src/environments/environment.development.ts
 /src/environments/*.local.ts
 .env

@@ -21,8 +21,13 @@ export class SupabaseService {
   readonly isLoading = signal<boolean>(true);
 
   constructor() {
+    // Sanitiza a URL removendo sufixos acidentais como /rest/v1/ ou barras finais
+    const sanitizedUrl = environment.supabase.url
+      .replace(/\/rest\/v1\/?$/, '')
+      .replace(/\/$/, '');
+
     this.supabase = createClient(
-      environment.supabase.url,
+      sanitizedUrl,
       environment.supabase.anonKey,
       {
         auth: {
@@ -51,7 +56,7 @@ export class SupabaseService {
       this.isLoading.set(false);
     }
 
-    // Ouvinte em tempo real para mudanças de login/logout/token refresh
+    // Ouvinte reativo para login, logout e renovação de token
     this.supabase.auth.onAuthStateChange(
       (_event: AuthChangeEvent, session: Session | null) => {
         this.currentSession.set(session);
@@ -60,24 +65,47 @@ export class SupabaseService {
     );
   }
 
-  async signInWithGoogle(): Promise<void> {
-    const { error } = await this.supabase.auth.signInWithOAuth({
-      provider: 'google',
+  /**
+   * Autenticação nativa por E-mail e Senha
+   */
+  async signInWithPassword(email: string, password: string): Promise<void> {
+    const { error } = await this.supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) throw error;
+  }
+
+  /**
+   * Cadastro de nova conta por E-mail e Senha
+   */
+  async signUp(email: string, password: string): Promise<void> {
+    const { error } = await this.supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (error) throw error;
+  }
+
+  /**
+   * Autenticação sem senha via link no e-mail (Magic Link)
+   */
+  async signInWithOtp(email: string): Promise<void> {
+    const { error } = await this.supabase.auth.signInWithOtp({
+      email,
       options: {
-        redirectTo: `${window.location.origin}/hub`,
+        emailRedirectTo: `${window.location.origin}/hub`,
       },
     });
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
   }
 
   async signOut(): Promise<void> {
     const { error } = await this.supabase.auth.signOut();
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
     this.currentSession.set(null);
     this.currentUser.set(null);
   }
