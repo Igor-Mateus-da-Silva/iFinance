@@ -301,43 +301,49 @@ export class FinanceSetupService {
   // 5. Template Sugerido Padrão 50/30/20 com Categorias Populares
   // ===========================================================================
   async seedDefault503020(): Promise<void> {
-    // 1. Grupos de Orçamento
-    const gNecessidades = await this.createBudgetGroup({
-      name: 'Necessidades Básicas (Essencial)',
+    // 1. Grupos de Orçamento (Budget Groups - Tipo: EXPENSE)
+    const gGastosFixos = await this.createBudgetGroup({
+      name: 'Gastos Fixos (Essencial)',
       target_percentage: 50,
       type: 'EXPENSE',
     });
 
     const gDesejos = await this.createBudgetGroup({
-      name: 'Desejos Pessoais & Estilo de Vida',
+      name: 'Desejos (Estilo de Vida)',
       target_percentage: 30,
       type: 'EXPENSE',
     });
 
-    const gPoupanca = await this.createBudgetGroup({
-      name: 'Poupança & Futuro (Investimentos)',
+    const gObjetivos = await this.createBudgetGroup({
+      name: 'Objetivos & Futuro (Investimentos)',
       target_percentage: 20,
       type: 'EXPENSE',
     });
 
-    // 2. Categorias de Despesas atreladas aos grupos
-    // Necessidades
-    await this.createCategory({ name: 'Moradia (Aluguel, Condomínio, Luz)', type: 'EXPENSE', budget_group_id: gNecessidades.id, color_or_icon: '#3b82f6' });
-    await this.createCategory({ name: 'Supermercado & Feira', type: 'EXPENSE', budget_group_id: gNecessidades.id, color_or_icon: '#10b981' });
-    await this.createCategory({ name: 'Saúde & Farmácia', type: 'EXPENSE', budget_group_id: gNecessidades.id, color_or_icon: '#ef4444' });
-    await this.createCategory({ name: 'Transporte & Combustível', type: 'EXPENSE', budget_group_id: gNecessidades.id, color_or_icon: '#f59e0b' });
+    // 2. Categorias de Saída (Type: EXPENSE - vinculadas aos grupos acima)
+    // 2.1 Vinculadas aos Gastos Fixos (50%)
+    await this.createCategory({ name: 'Moradia', type: 'EXPENSE', budget_group_id: gGastosFixos.id, color_or_icon: '#3b82f6' });
+    await this.createCategory({ name: 'Alimentação Básica', type: 'EXPENSE', budget_group_id: gGastosFixos.id, color_or_icon: '#10b981' });
+    await this.createCategory({ name: 'Transporte', type: 'EXPENSE', budget_group_id: gGastosFixos.id, color_or_icon: '#f59e0b' });
+    await this.createCategory({ name: 'Comunicação', type: 'EXPENSE', budget_group_id: gGastosFixos.id, color_or_icon: '#06b6d4' });
+    await this.createCategory({ name: 'Educação & Dívidas', type: 'EXPENSE', budget_group_id: gGastosFixos.id, color_or_icon: '#6366f1' });
 
-    // Desejos
-    await this.createCategory({ name: 'Restaurantes, Bares & Delivery', type: 'EXPENSE', budget_group_id: gDesejos.id, color_or_icon: '#ec4899' });
-    await this.createCategory({ name: 'Lazer, Streaming & Viagens', type: 'EXPENSE', budget_group_id: gDesejos.id, color_or_icon: '#8b5cf6' });
-    await this.createCategory({ name: 'Compras Pessoais & Vestuário', type: 'EXPENSE', budget_group_id: gDesejos.id, color_or_icon: '#06b6d4' });
+    // 2.2 Vinculadas aos Desejos (30%)
+    await this.createCategory({ name: 'Saúde & Bem-Estar', type: 'EXPENSE', budget_group_id: gDesejos.id, color_or_icon: '#ec4899' });
+    await this.createCategory({ name: 'Desenvolvimento Pessoal', type: 'EXPENSE', budget_group_id: gDesejos.id, color_or_icon: '#8b5cf6' });
+    await this.createCategory({ name: 'Conveniência / Serviços', type: 'EXPENSE', budget_group_id: gDesejos.id, color_or_icon: '#14b8a6' });
+    await this.createCategory({ name: 'Lazer & Restaurantes', type: 'EXPENSE', budget_group_id: gDesejos.id, color_or_icon: '#f97316' });
+    await this.createCategory({ name: 'Assinaturas', type: 'EXPENSE', budget_group_id: gDesejos.id, color_or_icon: '#a855f7' });
+    await this.createCategory({ name: 'Compras Variadas', type: 'EXPENSE', budget_group_id: gDesejos.id, color_or_icon: '#e11d48' });
 
-    // Poupança
-    await this.createCategory({ name: 'Aportes em Investimentos', type: 'EXPENSE', budget_group_id: gPoupanca.id, color_or_icon: '#10b981' });
-    await this.createCategory({ name: 'Reserva de Emergência', type: 'EXPENSE', budget_group_id: gPoupanca.id, color_or_icon: '#6366f1' });
+    // 2.3 Vinculadas aos Objetivos & Futuro (20%)
+    await this.createCategory({ name: 'Reserva de Emergência', type: 'EXPENSE', budget_group_id: gObjetivos.id, color_or_icon: '#059669' });
+    await this.createCategory({ name: 'Investimentos (Aportes)', type: 'EXPENSE', budget_group_id: gObjetivos.id, color_or_icon: '#2563eb' });
 
-    // 3. Categorias de Receitas (sem grupo de orçamento de despesa)
+    // 3. Categorias de Entrada (Type: INCOME - sem vínculo de grupo)
     await this.createCategory({ name: 'Salário Principal', type: 'INCOME', budget_group_id: null, color_or_icon: '#10b981' });
+    await this.createCategory({ name: 'Vale Alimentação', type: 'INCOME', budget_group_id: null, color_or_icon: '#14b8a6' });
+    await this.createCategory({ name: 'Bônus', type: 'INCOME', budget_group_id: null, color_or_icon: '#8b5cf6' });
     await this.createCategory({ name: 'Renda Extra & Freelance', type: 'INCOME', budget_group_id: null, color_or_icon: '#3b82f6' });
     await this.createCategory({ name: 'Rendimentos & Dividendos', type: 'INCOME', budget_group_id: null, color_or_icon: '#f59e0b' });
   }
