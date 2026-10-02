@@ -112,6 +112,17 @@ export class AssetClassesService {
       .delete()
       .eq('id', id);
 
-    if (error) throw error;
+    if (error) {
+      if (
+        error.code === '23503' ||
+        error.message?.includes('assets_asset_class_id_fkey') ||
+        error.message?.includes('violates foreign key constraint')
+      ) {
+        throw new Error(
+          'Não é possível excluir esta classe porque existem ativos da sua carteira vinculados a ela. Transfira ou remova os ativos antes de prosseguir.'
+        );
+      }
+      throw error;
+    }
   }
 }

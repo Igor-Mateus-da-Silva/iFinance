@@ -68,4 +68,23 @@ describe('AssetClassesService', () => {
       })
     ).rejects.toThrow('Limite da Conta de Teste atingido');
   });
+
+  it('deve interceptar erro de chave estrangeira (ativos vinculados) ao excluir classe e lançar mensagem amigável', async () => {
+    mockSupabase.client.from.mockReturnValue({
+      delete: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({
+          data: null,
+          error: {
+            code: '23503',
+            message: 'update or delete on table "asset_classes" violates foreign key constraint "assets_asset_class_id_fkey" on table "assets"',
+          },
+        }),
+      }),
+    });
+
+    await expect(service.deleteClass('class-123')).rejects.toThrow(
+      'Não é possível excluir esta classe porque existem ativos da sua carteira vinculados a ela'
+    );
+  });
 });
+

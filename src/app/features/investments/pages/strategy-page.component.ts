@@ -57,7 +57,7 @@ interface ClassFormModel {
             type="button"
             (click)="saveAllPercentages()"
             [disabled]="!isAllValid() || isSaving() || classes().length === 0"
-            [title]="!isAllValid() ? 'Distribuição precisa somar 100% para salvar' : 'Salvar alterações de metas no banco'"
+            [title]="!isAllValid() ? validationHint() : 'Salvar alterações de metas no banco'"
             class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold transition-all shadow-sm shadow-blue-500/20 flex items-center gap-2">
             @if (isSaving()) {
               <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
@@ -69,7 +69,7 @@ interface ClassFormModel {
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
               </svg>
-              <span>Salvar Distribuição (100%)</span>
+              <span>Salvar Distribuição</span>
             }
           </button>
         </div>
@@ -100,26 +100,30 @@ interface ClassFormModel {
               <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Soma das Classes Raiz:</span>
               <span
                 [class.text-blue-700]="isRootValid()"
-                [class.text-amber-600]="totalRootPercentage() < 100"
                 [class.text-rose-600]="totalRootPercentage() > 100"
                 class="text-sm font-extrabold">
-                {{ totalRootPercentage() | number: '1.2-2' }}% de 100%
+                {{ totalRootPercentage() | number: '1.1-2' }}% de 100%
               </span>
             </div>
 
             <div class="flex items-center gap-2">
-              @if (isRootValid()) {
+              @if (totalRootPercentage() === 100) {
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                  100% Alocado
+                </span>
+              } @else if (totalRootPercentage() < 100 && totalRootPercentage() > 0) {
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/60">
                   <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-                  Raízes Balanceadas
+                  {{ totalRootPercentage() | number: '1.1-2' }}% Alocado ({{ (100 - totalRootPercentage()) | number: '1.1-2' }}% livre)
                 </span>
-              } @else if (totalRootPercentage() < 100) {
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/60">
-                  Falta alocar {{ (100 - totalRootPercentage()) | number: '1.2-2' }}%
+              } @else if (totalRootPercentage() <= 0) {
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-gray-100 text-gray-600 border border-gray-200/60">
+                  0% Definido
                 </span>
               } @else {
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200/60">
-                  Excedeu em {{ (totalRootPercentage() - 100) | number: '1.2-2' }}%
+                  Excedeu em {{ (totalRootPercentage() - 100) | number: '1.1-2' }}%
                 </span>
               }
             </div>
@@ -130,13 +134,12 @@ interface ClassFormModel {
             <div
               class="h-full rounded-full transition-all duration-300 ease-out"
               [class.bg-blue-600]="isRootValid()"
-              [class.bg-amber-500]="totalRootPercentage() < 100"
               [class.bg-rose-500]="totalRootPercentage() > 100"
               [style.width.%]="rootBarWidth()"></div>
           </div>
 
           @if (!isAllValid()) {
-            <p class="text-[11px] text-gray-500 mt-3 flex items-center gap-1.5 font-medium">
+            <p class="text-[11px] text-amber-600 mt-3 flex items-center gap-1.5 font-medium">
               <svg class="w-3.5 h-3.5 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -216,9 +219,9 @@ interface ClassFormModel {
                       type="number"
                       min="0"
                       max="100"
-                      step="1"
-                      [(ngModel)]="root.target_percentage"
-                      (ngModelChange)="onPercentageChanged()"
+                      step="any"
+                      [ngModel]="root.target_percentage"
+                      (ngModelChange)="updateClassPercentage(root.id, $event)"
                       class="w-16 bg-white border border-gray-200 rounded-lg px-2 py-0.5 text-right font-bold text-sm text-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                     <span class="text-xs text-gray-600 font-bold">%</span>
                   </div>
@@ -259,10 +262,9 @@ interface ClassFormModel {
                     <span class="text-gray-500 font-medium">Distribuição interna das Subclasses:</span>
                     <span
                       [class.text-blue-700]="isSubclassTotalValid(root.id)"
-                      [class.text-amber-600]="getSubclassTotal(root.id) < 100"
                       [class.text-rose-600]="getSubclassTotal(root.id) > 100"
                       class="font-bold">
-                      {{ getSubclassTotal(root.id) | number: '1.2-2' }}% de 100% da classe
+                      {{ getSubclassTotal(root.id) | number: '1.1-2' }}% de 100% da classe
                     </span>
                   </div>
 
@@ -270,8 +272,7 @@ interface ClassFormModel {
                   <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden p-0.5 border border-gray-200/60 mb-3.5">
                     <div
                       class="h-full rounded-full transition-all duration-300"
-                      [class.bg-blue-600]="isSubclassTotalValid(root.id)"
-                      [class.bg-amber-500]="getSubclassTotal(root.id) < 100"
+                      [class.bg-blue-600]="getSubclassTotal(root.id) <= 100"
                       [class.bg-rose-500]="getSubclassTotal(root.id) > 100"
                       [style.width.%]="subclassBarWidth(root.id)"></div>
                   </div>
@@ -297,9 +298,9 @@ interface ClassFormModel {
                               type="number"
                               min="0"
                               max="100"
-                              step="1"
-                              [(ngModel)]="sub.target_percentage"
-                              (ngModelChange)="onPercentageChanged()"
+                              step="any"
+                              [ngModel]="sub.target_percentage"
+                              (ngModelChange)="updateClassPercentage(sub.id, $event)"
                               class="w-14 bg-transparent text-right font-bold text-xs text-blue-700 focus:outline-none" />
                             <span class="text-[11px] text-gray-500 font-semibold">%</span>
                           </div>
@@ -477,13 +478,14 @@ export class StrategyPageComponent implements OnInit {
     return Math.round(sum * 100) / 100;
   });
 
-  // Validação: Raízes devem somar 100%
+  // Validação: Raízes devem somar mais que 0% e no máximo 100%
   isRootValid = computed(() => {
-    return Math.abs(this.totalRootPercentage() - 100) < 0.01;
+    const total = this.totalRootPercentage();
+    return total > 0 && total <= 100;
   });
 
   rootBarWidth = computed(() => {
-    return Math.min(100, this.totalRootPercentage());
+    return Math.min(100, Math.max(0, this.totalRootPercentage()));
   });
 
   // Retorna subclasses de um pai
@@ -498,12 +500,16 @@ export class StrategyPageComponent implements OnInit {
     return Math.round(sum * 100) / 100;
   }
 
+  // Validação interna das subclasses: não podem ultrapassar 100%
   isSubclassTotalValid(parentId: string): boolean {
-    return Math.abs(this.getSubclassTotal(parentId) - 100) < 0.01;
+    const subs = this.getSubclasses(parentId);
+    if (subs.length === 0) return true;
+    const total = this.getSubclassTotal(parentId);
+    return total >= 0 && total <= 100;
   }
 
   subclassBarWidth(parentId: string): number {
-    return Math.min(100, this.getSubclassTotal(parentId));
+    return Math.min(100, Math.max(0, this.getSubclassTotal(parentId)));
   }
 
   // Impacto real na carteira total
@@ -513,7 +519,7 @@ export class StrategyPageComponent implements OnInit {
     return (parentVal * subVal) / 100;
   }
 
-  // Validação Geral (Raízes em 100% e todas as raízes com subclasses em 100%)
+  // Validação Geral (Raízes <= 100% e > 0, e todas as subclasses <= 100%)
   isAllValid = computed(() => {
     if (!this.isRootValid() || this.rootClasses().length === 0) {
       return false;
@@ -531,30 +537,43 @@ export class StrategyPageComponent implements OnInit {
 
   // Mensagem didática de auxílio
   validationHint = computed(() => {
-    if (!this.isRootValid()) {
-      const diff = 100 - this.totalRootPercentage();
-      if (diff > 0) {
-        return `As Classes Raiz somam ${this.totalRootPercentage()}%. Faltam ${diff.toFixed(1)}% para fechar 100%.`;
-      } else {
-        return `As Classes Raiz ultrapassaram 100% (atual: ${this.totalRootPercentage()}%). Reduza ${Math.abs(diff).toFixed(1)}%.`;
-      }
+    if (this.rootClasses().length === 0) {
+      return 'Nenhuma classe raiz cadastrada. Crie uma classe para começar.';
+    }
+
+    const totalRoot = this.totalRootPercentage();
+    if (totalRoot <= 0) {
+      return 'Defina porcentagens maiores que 0% (máximo de 100% no total).';
+    }
+    if (totalRoot > 100) {
+      const diff = Math.round((totalRoot - 100) * 100) / 100;
+      return `As Classes Raiz ultrapassaram 100% (atual: ${totalRoot}%). Reduza ${diff}% para salvar.`;
     }
 
     for (const root of this.rootClasses()) {
       const subs = this.getSubclasses(root.id);
-      if (subs.length > 0 && !this.isSubclassTotalValid(root.id)) {
-        const total = this.getSubclassTotal(root.id);
-        const diff = 100 - total;
-        return `As subclasses de "${root.name}" somam ${total}%. Devem somar exatamente 100% (diferença de ${Math.abs(diff).toFixed(1)}%).`;
+      if (subs.length > 0) {
+        const totalSub = this.getSubclassTotal(root.id);
+        if (totalSub > 100) {
+          const diff = Math.round((totalSub - 100) * 100) / 100;
+          return `As subclasses de "${root.name}" ultrapassaram 100% (atual: ${totalSub}%). Reduza ${diff}%.`;
+        }
       }
     }
 
-    return 'Todas as porcentagens estão perfeitamente equilibradas em 100%!';
+    if (totalRoot === 100) {
+      return 'Distribuição 100% equilibrada!';
+    }
+    const free = Math.round((100 - totalRoot) * 100) / 100;
+    return `Distribuição válida: ${totalRoot}% alocado (${free}% livre para novas alocações).`;
   });
 
-  onPercentageChanged(): void {
-    // Reavalia computeds via signals
-    this.classes.update((list) => [...list]);
+  updateClassPercentage(id: string, value: any): void {
+    const parsed = typeof value === 'number' ? value : parseFloat(value);
+    const numValue = isNaN(parsed) || parsed < 0 ? 0 : Math.round(parsed * 100) / 100;
+    this.classes.update((list) =>
+      list.map((c) => (c.id === id ? { ...c, target_percentage: numValue } : c))
+    );
   }
 
   async saveAllPercentages(): Promise<void> {
@@ -572,7 +591,7 @@ export class StrategyPageComponent implements OnInit {
       await this.classesService.batchUpdatePercentages(payload);
       this.feedback.set({
         type: 'success',
-        text: 'Estratégia de metas 100% salva no banco com sucesso!',
+        text: 'Estratégia de metas salva no banco com sucesso!',
       });
     } catch (err: any) {
       this.feedback.set({
@@ -670,10 +689,18 @@ export class StrategyPageComponent implements OnInit {
         text: `Classe "${name}" excluída com sucesso.`,
       });
     } catch (err: any) {
-      this.toastService.error('Erro ao excluir classe: ' + (err.message || 'Falha no Supabase.'));
+      let friendlyMsg = err.message || 'Falha no Supabase.';
+      if (
+        err.code === '23503' ||
+        err.message?.includes('assets_asset_class_id_fkey') ||
+        err.message?.includes('violates foreign key constraint')
+      ) {
+        friendlyMsg = `Não é possível excluir a classe "${name}" porque existem ativos da sua carteira vinculados a ela. Transfira ou remova esses ativos antes de excluir.`;
+      }
+      this.toastService.error(friendlyMsg, 'Ação Bloqueada');
       this.feedback.set({
         type: 'error',
-        text: 'Erro ao excluir classe: ' + (err.message || 'Falha no Supabase.'),
+        text: friendlyMsg,
       });
     }
   }
