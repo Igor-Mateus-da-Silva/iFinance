@@ -9,6 +9,7 @@ import {
 } from '../../../core/models/database.types';
 import { FinanceSetupService } from '../services/finance-setup.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { SupabaseService } from '../../../core/services/supabase.service';
 
 type SetupTab = 'accounts-cards' | 'budget-categories';
 
@@ -257,6 +258,10 @@ type SetupTab = 'accounts-cards' | 'budget-categories';
                     <button
                       type="button"
                       (click)="seedDefault503020()"
+                      [disabled]="isDemoAccount()"
+                      [title]="isDemoAccount() ? 'Indisponível na conta Demonstração' : 'Carregar Padrão 50/30/20'"
+                      [class.opacity-40]="isDemoAccount()"
+                      [class.cursor-not-allowed]="isDemoAccount()"
                       class="px-3.5 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 text-xs font-semibold transition-all">
                       Carregar Padrão 50/30/20
                     </button>
@@ -737,6 +742,9 @@ type SetupTab = 'accounts-cards' | 'budget-categories';
 export class FinancialSetupPageComponent implements OnInit {
   private readonly financeService = inject(FinanceSetupService);
   private readonly toastService = inject(ToastService);
+  private readonly supabaseService = inject(SupabaseService);
+
+  readonly isDemoAccount = this.supabaseService.isDemoAccount;
 
   activeTab = signal<SetupTab>('accounts-cards');
   isLoading = signal<boolean>(true);
@@ -1100,6 +1108,13 @@ export class FinancialSetupPageComponent implements OnInit {
   }
 
   async seedDefault503020(): Promise<void> {
+    if (this.isDemoAccount()) {
+      this.toastService.warning(
+        'A carga automática de modelo padrão está desativada para a conta de demonstração.',
+        'Conta Demo'
+      );
+      return;
+    }
     this.isLoading.set(true);
     try {
       await this.financeService.seedDefault503020();

@@ -95,7 +95,12 @@ Deno.serve(async (req: Request) => {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (profile?.plan_type === 'DEMO') {
+      let isDemo = profile?.plan_type === 'DEMO';
+      if (!isDemo && user.email === 'teste@teste.com') {
+        isDemo = true;
+      }
+
+      if (isDemo) {
         const startOfDay = new Date();
         startOfDay.setUTCHours(0, 0, 0, 0);
 
@@ -105,7 +110,7 @@ Deno.serve(async (req: Request) => {
           .eq('user_id', user.id)
           .gte('created_at', startOfDay.toISOString());
 
-        if (count !== null && count >= 3) {
+        if (count !== null && count >= 5) {
           return new Response(
             JSON.stringify({
               error: 'Limite diário de IA atingido',

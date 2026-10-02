@@ -75,49 +75,56 @@ BEGIN
     FROM public.user_profiles
     WHERE user_id = NEW.user_id;
 
+    -- Salvaguarda: se não houver perfil ainda, verifica se é o usuário teste@teste.com
+    IF v_plan IS NULL THEN
+        IF EXISTS (SELECT 1 FROM auth.users WHERE id = NEW.user_id AND email = 'teste@teste.com') THEN
+            v_plan := 'DEMO';
+        END IF;
+    END IF;
+
     -- Se o plano não for DEMO, permite a inserção normalmente
     IF v_plan IS NULL OR v_plan <> 'DEMO' THEN
         RETURN NEW;
     END IF;
 
-    -- 4.1 Limite em financial_accounts: Máximo de 3 contas
+    -- 4.1 Limite em financial_accounts: Máximo de 5 contas
     IF TG_TABLE_NAME = 'financial_accounts' THEN
         SELECT count(*) INTO v_count
         FROM public.financial_accounts
         WHERE user_id = NEW.user_id;
 
-        IF v_count >= 3 THEN
+        IF v_count >= 5 THEN
             RAISE EXCEPTION 'Limite do plano de demonstração atingido' USING ERRCODE = 'P0001';
         END IF;
 
-    -- 4.2 Limite em transactions: Máximo de 3 transações por mês
+    -- 4.2 Limite em transactions: Máximo de 5 transações por mês
     ELSIF TG_TABLE_NAME = 'transactions' THEN
         SELECT count(*) INTO v_count
         FROM public.transactions
         WHERE user_id = NEW.user_id
           AND date_trunc('month', date::date) = date_trunc('month', NEW.date::date);
 
-        IF v_count >= 3 THEN
+        IF v_count >= 5 THEN
             RAISE EXCEPTION 'Limite do plano de demonstração atingido' USING ERRCODE = 'P0001';
         END IF;
 
-    -- 4.3 Limite em asset_classes: Máximo de 3 classes de ativos
+    -- 4.3 Limite em asset_classes: Máximo de 5 classes de ativos
     ELSIF TG_TABLE_NAME = 'asset_classes' THEN
         SELECT count(*) INTO v_count
         FROM public.asset_classes
         WHERE user_id = NEW.user_id;
 
-        IF v_count >= 3 THEN
+        IF v_count >= 5 THEN
             RAISE EXCEPTION 'Limite do plano de demonstração atingido' USING ERRCODE = 'P0001';
         END IF;
 
-    -- 4.4 Limite em assets: Máximo de 3 ativos cadastrados na carteira
+    -- 4.4 Limite em assets: Máximo de 5 ativos cadastrados na carteira
     ELSIF TG_TABLE_NAME = 'assets' THEN
         SELECT count(*) INTO v_count
         FROM public.assets
         WHERE user_id = NEW.user_id;
 
-        IF v_count >= 3 THEN
+        IF v_count >= 5 THEN
             RAISE EXCEPTION 'Limite do plano de demonstração atingido' USING ERRCODE = 'P0001';
         END IF;
     END IF;

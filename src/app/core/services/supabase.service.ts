@@ -19,6 +19,12 @@ export class SupabaseService {
   readonly currentSession = signal<Session | null>(null);
   readonly isAuthenticated = computed(() => !!this.currentUser());
   readonly isLoading = signal<boolean>(true);
+  readonly planType = signal<'PRO' | 'DEMO' | null>(null);
+  readonly isDemoAccount = computed(() => {
+    const user = this.currentUser();
+    if (!user) return false;
+    return user.email === 'teste@teste.com' || this.planType() === 'DEMO';
+  });
 
   constructor() {
     // Sanitiza a URL removendo sufixos acidentais como /rest/v1/ ou barras finais
@@ -51,6 +57,7 @@ export class SupabaseService {
       if (!error && data.session) {
         this.currentSession.set(data.session);
         this.currentUser.set(data.session.user);
+        this.loadUserProfile(data.session.user?.id);
       }
     } finally {
       this.isLoading.set(false);
@@ -61,11 +68,43 @@ export class SupabaseService {
       async (event: AuthChangeEvent, session: Session | null) => {
         this.currentSession.set(session);
         this.currentUser.set(session?.user ?? null);
+        if (session?.user) {
+          this.loadUserProfile(session.user.id);
+        } else {
+          this.planType.set(null);
+        }
         if (event === 'SIGNED_OUT') {
           await this.clearAppCaches();
         }
       }
     );
+  }
+
+  /**
+   * Consulta o tipo de plano do usuário na tabela user_profiles
+   */
+  private async loadUserProfile(userId?: string): Promise<void> {
+    if (!userId) {
+      this.planType.set(null);
+      return;
+    }
+    const user = this.currentUser();
+    if (user?.email === 'teste@teste.com') {
+      this.planType.set('DEMO');
+    }
+    try {
+      const { data } = await this.supabase
+        .from('user_profiles')
+        .select('plan_type')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (data?.plan_type) {
+        this.planType.set(data.plan_type as 'PRO' | 'DEMO');
+      }
+    } catch {
+      // Ignora erro e mantém salvaguarda
+    }
   }
 
   /**

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AssetClass } from '../../../core/models/database.types';
 import { AssetClassesService } from '../services/asset-classes.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { SupabaseService } from '../../../core/services/supabase.service';
 
 interface ClassFormModel {
   id?: string;
@@ -31,8 +32,11 @@ interface ClassFormModel {
           <button
             type="button"
             (click)="seedDefaultTemplate()"
-            class="px-3.5 py-2.5 rounded-xl bg-white hover:bg-gray-50 text-gray-700 hover:text-gray-900 border border-gray-200 text-xs font-semibold transition-all flex items-center gap-1.5 shadow-2xs"
-            title="Preencher com o modelo sugerido (Renda Fixa 25%, Ações 40%, FIIs 15%, Cripto 5%, Reserva 15%)">
+            [disabled]="isDemoAccount()"
+            [title]="isDemoAccount() ? 'Indisponível na conta Demonstração' : 'Preencher com o modelo sugerido (Renda Fixa 25%, Ações 40%, FIIs 15%, Cripto 5%, Reserva 15%)'"
+            [class.opacity-40]="isDemoAccount()"
+            [class.cursor-not-allowed]="isDemoAccount()"
+            class="px-3.5 py-2.5 rounded-xl bg-white hover:bg-gray-50 text-gray-700 hover:text-gray-900 border border-gray-200 text-xs font-semibold transition-all flex items-center gap-1.5 shadow-2xs">
             <svg class="w-3.5 h-3.5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
@@ -172,6 +176,10 @@ interface ClassFormModel {
             </button>
             <button
               (click)="seedDefaultTemplate()"
+              [disabled]="isDemoAccount()"
+              [title]="isDemoAccount() ? 'Indisponível na conta Demonstração' : 'Carregar Modelo Sugerido'"
+              [class.opacity-40]="isDemoAccount()"
+              [class.cursor-not-allowed]="isDemoAccount()"
               class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 text-xs font-semibold transition-all">
               Carregar Modelo Sugerido
             </button>
@@ -417,6 +425,9 @@ interface ClassFormModel {
 export class StrategyPageComponent implements OnInit {
   private readonly classesService = inject(AssetClassesService);
   private readonly toastService = inject(ToastService);
+  private readonly supabaseService = inject(SupabaseService);
+
+  readonly isDemoAccount = this.supabaseService.isDemoAccount;
 
   classes = signal<AssetClass[]>([]);
   isLoading = signal<boolean>(true);
@@ -669,6 +680,14 @@ export class StrategyPageComponent implements OnInit {
 
   // Preenche o modelo sugerido configurado pelo usuário (sem subclasses iniciais)
   async seedDefaultTemplate(): Promise<void> {
+    if (this.isDemoAccount()) {
+      this.toastService.warning(
+        'A carga automática de modelo sugerido está desativada para a conta de demonstração.',
+        'Conta Demo'
+      );
+      return;
+    }
+
     if (this.classes().length > 0) {
       const confirmOverwrite = await this.toastService.confirm({
         title: 'Aplicar Modelo Sugerido',
