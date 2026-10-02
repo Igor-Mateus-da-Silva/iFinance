@@ -124,7 +124,14 @@ import { SupabaseService } from '../../core/services/supabase.service';
       </main>
 
       <footer class="w-full text-center py-4 border-t border-gray-200/60 text-xs text-gray-500 bg-white/50">
-        iFinance Capital &bull; Versão 1.0.0 &bull; PWA & Minimalismo Executivo
+        iFinance Capital &bull; Desenvolvido por
+        <a
+          href="https://github.com/Igor-Mateus-da-Silva"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-blue-600 hover:text-blue-700 font-semibold hover:underline transition-colors">
+          IgorMS Dev
+        </a>
       </footer>
     </div>
   `,

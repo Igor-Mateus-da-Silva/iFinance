@@ -18,9 +18,9 @@ export interface NavItem {
   standalone: true,
   imports: [CommonModule, RouterModule, AiChatComponent],
   template: `
-    <div class="min-h-screen bg-gray-50/60 text-gray-900 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
+    <div class="h-screen h-[100dvh] bg-gray-50/60 text-gray-900 flex flex-col font-sans selection:bg-blue-600 selection:text-white overflow-hidden">
       <!-- 1. Top Navbar Executiva -->
-      <header class="h-16 bg-white/95 backdrop-blur-md border-b border-gray-200/80 sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6">
+      <header class="h-16 flex-shrink-0 bg-white/95 backdrop-blur-md border-b border-gray-200/80 z-30 flex items-center justify-between px-4 sm:px-6">
         <div class="flex items-center gap-3 sm:gap-4">
           <!-- Botão Toggle Mobile Sidebar (Drawer) -->
           <button
@@ -102,23 +102,24 @@ export interface NavItem {
       </header>
 
       <!-- Corpo Principal: Sidebar + Conteúdo -->
-      <div class="flex-1 flex overflow-hidden">
+      <div class="flex-1 flex overflow-hidden min-h-0 relative">
         <!-- Backdrop Mobile -->
         @if (sidebarOpen()) {
           <div
             (click)="toggleSidebar()"
-            class="fixed inset-0 bg-gray-950/30 backdrop-blur-xs z-30 md:hidden transition-opacity"></div>
+            class="fixed inset-0 bg-gray-950/40 backdrop-blur-xs z-40 md:hidden transition-opacity"></div>
         }
 
         <!-- 2. Sidebar Lateral Desktop / Mobile Drawer -->
         <aside
           [class.translate-x-0]="sidebarOpen()"
           [class.-translate-x-full]="!sidebarOpen()"
-          class="fixed md:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200/80 p-4 flex flex-col justify-between transition-transform duration-300 ease-in-out md:translate-x-0 shadow-sm md:shadow-none">
+          class="fixed md:static inset-y-0 left-0 z-50 md:z-20 w-64 bg-white border-r border-gray-200/80 flex flex-col justify-between transition-transform duration-300 ease-in-out md:translate-x-0 shadow-xl md:shadow-none h-full flex-shrink-0">
           
-          <div>
+          <!-- Seção de Menus com Rolagem Independente -->
+          <div class="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
             <!-- Título do Menu da Seção -->
-            <div class="px-3 mb-4">
+            <div class="px-3">
               <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
                 Navegação {{ isInvestments() ? 'de Investimentos' : 'Financeira' }}
               </span>
@@ -147,8 +148,8 @@ export interface NavItem {
             </nav>
           </div>
 
-          <!-- Rodapé da Sidebar: Acesso Rápido ao Hub -->
-          <div class="pt-4 border-t border-gray-200/80 space-y-2">
+          <!-- Rodapé da Sidebar: Acesso Rápido ao Hub Fixo -->
+          <div class="flex-shrink-0 p-4 border-t border-gray-200/80 bg-white space-y-2">
             <button
               type="button"
               (click)="goToHub()"
@@ -161,12 +162,27 @@ export interface NavItem {
           </div>
         </aside>
 
-        <!-- 3. Área de Conteúdo da Página -->
-        <main class="flex-1 overflow-y-auto bg-gray-50/60 p-4 sm:p-6 lg:p-8 pb-20 md:pb-8">
-          <div class="max-w-7xl mx-auto">
-            <router-outlet></router-outlet>
-          </div>
-        </main>
+        <!-- Coluna de Conteúdo Principal + Rodapé Alinhado na Base -->
+        <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <!-- 3. Área de Conteúdo da Página -->
+          <main class="flex-1 overflow-y-auto bg-gray-50/60 p-4 sm:p-6 lg:p-8 pb-20 md:pb-8 min-h-0">
+            <div class="max-w-7xl w-full mx-auto">
+              <router-outlet></router-outlet>
+            </div>
+          </main>
+
+          <!-- Rodapé Idêntico ao Hub (Fixado na base, flush) -->
+          <footer class="w-full text-center py-4 border-t border-gray-200/60 text-xs text-gray-500 bg-white/50 flex-shrink-0 hidden md:block">
+            iFinance Capital &bull; Desenvolvido por
+            <a
+              href="https://github.com/Igor-Mateus-da-Silva"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="font-semibold text-blue-600 hover:text-blue-700 hover:underline transition-colors">
+              IgorMS Dev
+            </a>
+          </footer>
+        </div>
       </div>
 
       <!-- 4. Bottom Navigation Bar para Mobile (PWA Touch Experience) -->

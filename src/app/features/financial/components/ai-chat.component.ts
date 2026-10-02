@@ -23,7 +23,7 @@ import { ToastService } from '../../../core/services/toast.service';
   imports: [CommonModule, FormsModule],
   template: `
     <!-- 1. Botão Flutuante (FAB) da IA -->
-    <div class="fixed bottom-6 right-6 z-40">
+    <div class="fixed bottom-20 md:bottom-16 right-4 sm:right-6 z-40">
       <button
         type="button"
         (click)="toggleChat()"
@@ -66,9 +66,6 @@ import { ToastService } from '../../../core/services/toast.service';
           <div>
             <div class="flex items-center gap-2">
               <h2 class="text-sm font-bold text-gray-900 tracking-tight">Assistente Financeiro</h2>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200/60">
-                Gemini 3.5 Flash
-              </span>
             </div>
             <p class="text-[11px] text-gray-500 flex items-center gap-1.5 mt-0.5">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
@@ -517,7 +514,7 @@ export class AiChatComponent implements OnInit, OnDestroy {
     {
       id: 'welcome',
       role: 'model',
-      text: 'Olá! Sou o assistente financeiro do **iFinance**. 🤖\n\nPosso analisar seu orçamento 50/30/20 em tempo real, dizer se um gasto cabe no seu saldo ou extrair automaticamente dados de comprovantes e cupons fiscais.',
+      text: 'Olá! Sou o assistente financeiro do **iFinance**. 🤖\nComo posso te ajudar?',
       timestamp: new Date(),
     },
   ]);

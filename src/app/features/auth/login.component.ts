@@ -133,7 +133,14 @@ type AuthMode = 'signin' | 'signup' | 'magic-link';
 
         <!-- Rodapé do Card -->
         <div class="mt-6 text-center text-xs text-gray-400">
-          Protegido por Supabase Auth & Criptografia Ponta a Ponta
+          Criptografia Ponta a Ponta &bull; Desenvolvido por
+          <a
+            href="https://github.com/Igor-Mateus-da-Silva"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-blue-600 hover:text-blue-700 font-semibold hover:underline transition-colors">
+            IgorMS Dev
+          </a>
         </div>
       </div>
     </div>
