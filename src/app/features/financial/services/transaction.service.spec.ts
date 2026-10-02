@@ -283,5 +283,40 @@ describe('TransactionService & Date Helpers', () => {
       );
     });
   });
+
+  describe('Controle de Limites (Plano Demo)', () => {
+    it('deve interceptar erro P0001 do plano demo e disparar toast amigável', async () => {
+      mockSupabase.client.from.mockImplementation((table: string) => {
+        if (table === 'transactions') {
+          return {
+            insert: vi.fn().mockReturnValue({
+              select: vi.fn().mockResolvedValue({
+                data: null,
+                error: {
+                  code: 'P0001',
+                  message: 'Limite do plano de demonstração atingido',
+                },
+              }),
+            }),
+          };
+        }
+        return {};
+      });
+
+      await expect(
+        service.createTransaction({
+          description: '4ª Transação Demo',
+          amount: 50,
+          date: '2026-10-02',
+          type: 'EXPENSE',
+          category_id: 'cat-1',
+          payment_method: 'PIX',
+          is_paid: true,
+          is_fixed: false,
+          installments: 1,
+        })
+      ).rejects.toThrow('Limite da Conta de Teste atingido');
+    });
+  });
 });
 

@@ -7,6 +7,11 @@ import { FinancialDashboardService } from './financial-dashboard.service';
 import { FinanceSetupService } from './finance-setup.service';
 import { PortfolioService } from '../../investments/services/portfolio.service';
 import { AssetClassesService } from '../../investments/services/asset-classes.service';
+import {
+  ToastService,
+  DEMO_LIMIT_MESSAGE,
+  isDemoLimitError,
+} from '../../../core/services/toast.service';
 
 export interface ReceiptExtractionResult {
   amount: number;
@@ -62,6 +67,7 @@ export class AiAssistantService {
   private readonly setupService = inject(FinanceSetupService);
   private readonly portfolioService = inject(PortfolioService);
   private readonly assetClassesService = inject(AssetClassesService);
+  private readonly toastService = inject(ToastService);
 
   // Signals reativos para pré-preenchimento de modais pela IA
   readonly modalPrefill = signal<TransactionModalPrefill | null>(null);
@@ -320,6 +326,10 @@ DIRETRIZES DE RESPOSTA FINANCEIRA:
           if (!response.ok) {
             const errorData = await response.json().catch(() => null);
             const errorMsg = errorData?.error || (await response.text());
+            if (response.status === 403 || isDemoLimitError(errorData) || isDemoLimitError(errorMsg)) {
+              this.toastService.showDemoLimitNotice();
+              throw new Error(DEMO_LIMIT_MESSAGE);
+            }
             throw new Error(`Falha no proxy da IA (${response.status}): ${errorMsg}`);
           }
 
@@ -466,6 +476,10 @@ Responda ESTRITAMENTE com um objeto JSON válido (sem texto introdutório, sem f
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
       const errorMsg = errorData?.error || (await response.text());
+      if (response.status === 403 || isDemoLimitError(errorData) || isDemoLimitError(errorMsg)) {
+        this.toastService.showDemoLimitNotice();
+        throw new Error(DEMO_LIMIT_MESSAGE);
+      }
       throw new Error(`Falha ao ler comprovante com IA (${response.status}): ${errorMsg}`);
     }
 
@@ -566,6 +580,10 @@ Responda ESTRITAMENTE com um objeto JSON válido (sem texto introdutório, sem f
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
       const errorMsg = errorData?.error || (await response.text());
+      if (response.status === 403 || isDemoLimitError(errorData) || isDemoLimitError(errorMsg)) {
+        this.toastService.showDemoLimitNotice();
+        throw new Error(DEMO_LIMIT_MESSAGE);
+      }
       throw new Error(`Falha ao ler nota de corretagem com IA (${response.status}): ${errorMsg}`);
     }
 

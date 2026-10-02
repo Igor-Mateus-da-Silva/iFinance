@@ -19,7 +19,11 @@ import { FinanceSetupService } from '../services/finance-setup.service';
 import { TransactionService } from '../services/transaction.service';
 import { PortfolioService } from '../../investments/services/portfolio.service';
 import { AssetClassesService } from '../../investments/services/asset-classes.service';
-import { ToastService } from '../../../core/services/toast.service';
+import {
+  ToastService,
+  DEMO_LIMIT_MESSAGE,
+  isDemoLimitError,
+} from '../../../core/services/toast.service';
 
 @Component({
   selector: 'app-ai-chat',
@@ -1028,12 +1032,15 @@ export class AiChatComponent implements OnInit, OnDestroy {
         this.openModalFromReceipt(extracted);
       }
     } catch (err: any) {
+      const errorText = isDemoLimitError(err)
+        ? `⚠️ ${DEMO_LIMIT_MESSAGE}`
+        : `❌ Não consegui extrair os dados do documento: ${err.message || 'Erro desconhecido'}.`;
       this.messages.update((list) => [
         ...list,
         {
           id: crypto.randomUUID(),
           role: 'model',
-          text: `❌ Não consegui extrair os dados do documento: ${err.message || 'Erro desconhecido'}.`,
+          text: errorText,
           timestamp: new Date(),
         },
       ]);
@@ -1232,7 +1239,9 @@ export class AiChatComponent implements OnInit, OnDestroy {
       this.toastService.success(`Ativo "${ticker}" adicionado à carteira!`);
       this.scrollToBottom();
     } catch (err: any) {
-      this.toastService.error('Erro ao adicionar ativo: ' + (err.message || 'Falha no Supabase.'));
+      if (!isDemoLimitError(err)) {
+        this.toastService.error('Erro ao adicionar ativo: ' + (err.message || 'Falha no Supabase.'));
+      }
     } finally {
       this.isSavingAsset.set(false);
     }
@@ -1273,7 +1282,9 @@ export class AiChatComponent implements OnInit, OnDestroy {
       this.toastService.success(`Lançamento "${this.modalForm.description}" registrado com sucesso!`);
       this.scrollToBottom();
     } catch (err: any) {
-      this.toastService.error('Erro ao salvar lançamento: ' + err.message);
+      if (!isDemoLimitError(err)) {
+        this.toastService.error('Erro ao salvar lançamento: ' + err.message);
+      }
     } finally {
       this.isSaving.set(false);
     }
@@ -1314,12 +1325,15 @@ export class AiChatComponent implements OnInit, OnDestroy {
         this.scrollToBottom();
       },
       error: (err) => {
+        const errorText = isDemoLimitError(err)
+          ? `⚠️ ${DEMO_LIMIT_MESSAGE}`
+          : `❌ Erro ao processar resposta: ${err.message || 'Falha na conexão.'}`;
         this.messages.update((list) =>
           list.map((m) =>
             m.id === modelMsgId
               ? {
                   ...m,
-                  text: `❌ Erro ao processar resposta: ${err.message || 'Falha na conexão.'}`,
+                  text: errorText,
                   isStreaming: false,
                 }
               : m

@@ -65,19 +65,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // 3. Obtenção da Chave do Gemini a partir dos Secrets do Supabase
-    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
-    if (!geminiApiKey) {
-      return new Response(
-        JSON.stringify({
-          error:
-            'Chave GEMINI_API_KEY não configurada nos Secrets do Supabase. Configure com "supabase secrets set GEMINI_API_KEY=...".',
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // 4. Extração do Payload da Requisição
+    // 3. Extração do Payload da Requisição
     const body = await req.json();
     const mode = body.mode || 'chat'; // 'chat' (streaming SSE) ou 'vision' (json)
     const contents = body.contents;
@@ -88,6 +76,68 @@ Deno.serve(async (req: Request) => {
       return new Response(
         JSON.stringify({ error: 'Formato inválido: "contents" deve ser um array.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // 4. Verificação de Limites do Plano DEMO
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const dbClient = serviceRoleKey
+      ? createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } })
+      : createClient(supabaseUrl, supabaseAnonKey, {
+          global: { headers: { Authorization: `Bearer ${token}` } },
+          auth: { persistSession: false },
+        });
+
+    try {
+      const { data: profile } = await dbClient
+        .from('user_profiles')
+        .select('plan_type')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (profile?.plan_type === 'DEMO') {
+        const startOfDay = new Date();
+        startOfDay.setUTCHours(0, 0, 0, 0);
+
+        const { count } = await dbClient
+          .from('ai_usage_logs')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .gte('created_at', startOfDay.toISOString());
+
+        if (count !== null && count >= 3) {
+          return new Response(
+            JSON.stringify({
+              error: 'Limite diário de IA atingido',
+              code: 'P0001',
+              plan: 'DEMO',
+            }),
+            {
+              status: 403,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          );
+        }
+      }
+
+      // Registra o uso da IA para controle e auditoria
+      await dbClient.from('ai_usage_logs').insert({
+        user_id: user.id,
+        mode,
+      });
+    } catch (limitErr) {
+      console.warn('Aviso: Falha na verificação ou gravação do log de IA:', limitErr);
+    }
+
+    // 5. Obtenção da Chave do Gemini a partir dos Secrets do Supabase
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+    if (!geminiApiKey) {
+      return new Response(
+        JSON.stringify({
+          error:
+            'Chave GEMINI_API_KEY não configurada nos Secrets do Supabase. Configure com "supabase secrets set GEMINI_API_KEY=...".',
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 

@@ -44,4 +44,28 @@ describe('AssetClassesService', () => {
     expect(result.length).toBe(2);
     expect(result[0].target_percentage).toBe(50);
   });
+
+  it('deve interceptar erro P0001 ao criar classe além do limite do plano demo', async () => {
+    mockSupabase.client.from.mockReturnValue({
+      insert: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: null,
+            error: {
+              code: 'P0001',
+              message: 'Limite do plano de demonstração atingido',
+            },
+          }),
+        }),
+      }),
+    });
+
+    await expect(
+      service.createClass({
+        name: 'Criptomoedas',
+        parent_id: null,
+        target_percentage: 10,
+      })
+    ).rejects.toThrow('Limite da Conta de Teste atingido');
+  });
 });

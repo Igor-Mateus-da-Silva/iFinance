@@ -7,6 +7,11 @@ import {
   TransactionType,
 } from '../../../core/models/database.types';
 import { SupabaseService } from '../../../core/services/supabase.service';
+import {
+  ToastService,
+  DEMO_LIMIT_MESSAGE,
+  isDemoLimitError,
+} from '../../../core/services/toast.service';
 
 /**
  * Utilitário: adiciona N meses a uma data no formato YYYY-MM-DD
@@ -85,6 +90,7 @@ export function cleanUuid(value?: string | null): string | null {
 })
 export class TransactionService {
   private readonly supabase = inject(SupabaseService);
+  private readonly toastService = inject(ToastService);
 
   /**
    * Busca transações para o mês especificado (YYYY-MM), opcionalmente filtrando por cartão ou tipo.
@@ -206,7 +212,13 @@ export class TransactionService {
       .insert(records)
       .select();
 
-    if (error) throw error;
+    if (error) {
+      if (isDemoLimitError(error)) {
+        this.toastService.showDemoLimitNotice();
+        throw new Error(DEMO_LIMIT_MESSAGE);
+      }
+      throw error;
+    }
 
     // Atualização segura e atômica de saldo (Prevenção de Race Condition & IDOR)
     const targetAccountId = cleanUuid(dto.account_id);

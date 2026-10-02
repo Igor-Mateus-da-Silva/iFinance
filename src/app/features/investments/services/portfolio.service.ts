@@ -1,6 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from '../../../core/services/supabase.service';
 import { AssetClass } from '../../../core/models/database.types';
+import {
+  ToastService,
+  DEMO_LIMIT_MESSAGE,
+  isDemoLimitError,
+} from '../../../core/services/toast.service';
 
 export interface PortfolioHolding {
   portfolioId: string;
@@ -30,6 +35,7 @@ export interface CreateAssetHoldingPayload {
 })
 export class PortfolioService {
   private readonly supabase = inject(SupabaseService);
+  private readonly toastService = inject(ToastService);
 
   /**
    * Busca todas as posições da carteira unificadas com os ativos e suas classes
@@ -113,7 +119,13 @@ export class PortfolioService {
       .select('id')
       .single();
 
-    if (assetError) throw assetError;
+    if (assetError) {
+      if (isDemoLimitError(assetError)) {
+        this.toastService.showDemoLimitNotice();
+        throw new Error(DEMO_LIMIT_MESSAGE);
+      }
+      throw assetError;
+    }
 
     // 2. Insere a custódia na tabela portfolio
     const { error: portfolioError } = await this.supabase.client
@@ -125,7 +137,13 @@ export class PortfolioService {
         average_price: averagePrice,
       });
 
-    if (portfolioError) throw portfolioError;
+    if (portfolioError) {
+      if (isDemoLimitError(portfolioError)) {
+        this.toastService.showDemoLimitNotice();
+        throw new Error(DEMO_LIMIT_MESSAGE);
+      }
+      throw portfolioError;
+    }
   }
 
   /**

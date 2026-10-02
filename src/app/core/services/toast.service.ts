@@ -23,6 +23,30 @@ export interface ConfirmDialogState extends ConfirmDialogOptions {
   resolve?: (value: boolean) => void;
 }
 
+export const DEMO_LIMIT_MESSAGE =
+  'Limite da Conta de Teste atingido. Em um cenário real, aqui seria oferecido o plano Premium.';
+
+export function isDemoLimitError(error: any): boolean {
+  if (!error) return false;
+  const code = error.code || error.status;
+  const msg =
+    typeof error === 'string'
+      ? error
+      : (error.message || error.error || '');
+
+  return (
+    code === 'P0001' ||
+    code === 403 ||
+    (typeof msg === 'string' &&
+      (msg.includes('P0001') ||
+        msg.includes('Limite do plano de demonstração atingido') ||
+        msg.includes('Limite diário de IA atingido') ||
+        msg.includes('plano de demonstração') ||
+        msg.includes('Limite da Conta de Teste')))
+  );
+}
+
+
 @Injectable({
   providedIn: 'root',
 })
@@ -61,6 +85,13 @@ export class ToastService {
 
   warning(message: string, title: string = 'Aviso'): void {
     this.show(message, 'warning', title, 4500);
+  }
+
+  showDemoLimitNotice(): void {
+    this.warning(
+      DEMO_LIMIT_MESSAGE,
+      'Aviso de Limite'
+    );
   }
 
   remove(id: string): void {

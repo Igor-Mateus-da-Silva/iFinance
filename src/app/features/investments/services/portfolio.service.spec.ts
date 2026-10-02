@@ -27,4 +27,29 @@ describe('PortfolioService', () => {
   it('deve ser instanciado corretamente', () => {
     expect(service).toBeTruthy();
   });
+
+  it('deve interceptar erro P0001 ao cadastrar ativo além do limite do plano demo', async () => {
+    mockSupabase.client.from.mockReturnValue({
+      insert: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: null,
+            error: {
+              code: 'P0001',
+              message: 'Limite do plano de demonstração atingido',
+            },
+          }),
+        }),
+      }),
+    });
+
+    await expect(
+      service.createAssetWithHolding({
+        ticker: 'PETR4',
+        asset_class_id: 'cls-1',
+        current_price: 38.0,
+        quantity: 100,
+      })
+    ).rejects.toThrow('Limite da Conta de Teste atingido');
+  });
 });

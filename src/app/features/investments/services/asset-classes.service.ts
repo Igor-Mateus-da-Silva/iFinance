@@ -1,12 +1,18 @@
 import { Injectable, inject } from '@angular/core';
 import { AssetClass } from '../../../core/models/database.types';
 import { SupabaseService } from '../../../core/services/supabase.service';
+import {
+  ToastService,
+  DEMO_LIMIT_MESSAGE,
+  isDemoLimitError,
+} from '../../../core/services/toast.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AssetClassesService {
   private readonly supabase = inject(SupabaseService);
+  private readonly toastService = inject(ToastService);
 
   /**
    * Busca todas as classes de ativos do usuário logado
@@ -46,7 +52,13 @@ export class AssetClassesService {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      if (isDemoLimitError(error)) {
+        this.toastService.showDemoLimitNotice();
+        throw new Error(DEMO_LIMIT_MESSAGE);
+      }
+      throw error;
+    }
     return {
       ...data,
       target_percentage: Number(data.target_percentage) || 0,

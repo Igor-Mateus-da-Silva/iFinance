@@ -6,12 +6,18 @@ import {
   FinancialAccount,
 } from '../../../core/models/database.types';
 import { SupabaseService } from '../../../core/services/supabase.service';
+import {
+  ToastService,
+  DEMO_LIMIT_MESSAGE,
+  isDemoLimitError,
+} from '../../../core/services/toast.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class FinanceSetupService {
   private readonly supabase = inject(SupabaseService);
+  private readonly toastService = inject(ToastService);
 
   // ===========================================================================
   // 1. Contas Financeiras (financial_accounts)
@@ -43,7 +49,13 @@ export class FinanceSetupService {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      if (isDemoLimitError(error)) {
+        this.toastService.showDemoLimitNotice();
+        throw new Error(DEMO_LIMIT_MESSAGE);
+      }
+      throw error;
+    }
     return { ...data, balance: Number(data.balance) || 0 };
   }
 

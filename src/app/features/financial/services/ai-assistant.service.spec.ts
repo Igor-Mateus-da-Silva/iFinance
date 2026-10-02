@@ -7,6 +7,7 @@ import { FinanceSetupService } from './finance-setup.service';
 import { PortfolioService } from '../../investments/services/portfolio.service';
 import { AssetClassesService } from '../../investments/services/asset-classes.service';
 import { SupabaseService } from '../../../core/services/supabase.service';
+import { ToastService } from '../../../core/services/toast.service';
 
 describe('AiAssistantService', () => {
   let service: AiAssistantService;
@@ -180,5 +181,28 @@ describe('AiAssistantService', () => {
       const message = await firstValueFrom(service.sendMessageStream('Posso gastar R$ 100 hoje?'));
       expect(message).toContain('Sessão não encontrada');
     });
+
+    it('deve interceptar erro 403 de limite de IA e disparar o aviso de limite demo', async () => {
+      const originalFetch = globalThis.fetch;
+      const toastService = TestBed.inject(ToastService);
+      const toastSpy = vi.spyOn(toastService, 'showDemoLimitNotice');
+
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        json: vi.fn().mockResolvedValue({ error: 'Limite diário de IA atingido', code: 'P0001' }),
+        text: vi.fn().mockResolvedValue('Limite diário de IA atingido'),
+      } as any);
+
+      try {
+        await expect(firstValueFrom(service.sendMessageStream('Olá'))).rejects.toThrow(
+          'Limite da Conta de Teste atingido'
+        );
+        expect(toastSpy).toHaveBeenCalledTimes(1);
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
   });
 });
+
