@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
+import { SupabaseService } from '../../../core/services/supabase.service';
 import { FinancialDashboardService } from './financial-dashboard.service';
 import { FinanceSetupService } from './finance-setup.service';
 
@@ -34,6 +35,7 @@ export interface TransactionModalPrefill {
   providedIn: 'root',
 })
 export class AiAssistantService {
+  private readonly supabase = inject(SupabaseService);
   private readonly dashboardService = inject(FinancialDashboardService);
   private readonly setupService = inject(FinanceSetupService);
 
@@ -42,18 +44,13 @@ export class AiAssistantService {
   readonly isModalRequested = signal<boolean>(false);
 
   /**
-   * Obtém a chave da API do Gemini a partir do environment.
+   * Obtém a URL da Edge Function gemini-proxy no Supabase.
    */
-  private getApiKey(): string {
-    return (environment as any).geminiApiKey || '';
-  }
-
-  /**
-   * Verifica se a chave de API está configurada.
-   */
-  hasApiKey(): boolean {
-    const key = this.getApiKey();
-    return Boolean(key && key.trim().length > 5);
+  private getProxyUrl(): string {
+    const baseUrl = environment.supabase.url
+      .replace(/\/rest\/v1\/?$/, '')
+      .replace(/\/$/, '');
+    return `${baseUrl}/functions/v1/gemini-proxy`;
   }
 
   /**
@@ -125,24 +122,24 @@ ${catsList || 'Sem categorias'}
   }
 
   /**
-   * Envia uma mensagem para o Gemini usando SSE (Server-Sent Events) para streaming em tempo real.
+   * Envia uma mensagem para o Gemini através da Edge Function gemini-proxy usando SSE para streaming em tempo real.
    */
   sendMessageStream(message: string, history: ChatMessage[] = []): Observable<string> {
     return new Observable<string>((subscriber) => {
-      const apiKey = this.getApiKey();
-
-      if (!this.hasApiKey()) {
-        subscriber.next(
-          '⚠️ **Chave da API do Google Gemini não encontrada.**\n\nPor favor, insira sua chave `GEMINI_API_KEY` no arquivo `.env` para conversar com o assistente.'
-        );
-        subscriber.complete();
-        return;
-      }
-
       const abortController = new AbortController();
 
       (async () => {
         try {
+          const token = await this.supabase.getAccessToken();
+
+          if (!token) {
+            subscriber.next(
+              '⚠️ **Sessão não encontrada.**\n\nPor favor, faça login novamente no aplicativo para conversar com o assistente.'
+            );
+            subscriber.complete();
+            return;
+          }
+
           const financialContext = await this.buildFinancialContext();
 
           const systemInstruction = `
@@ -176,9 +173,10 @@ DIRETRIZES DE RESPOSTA:
             parts: [{ text: message }],
           });
 
-          let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:streamGenerateContent?alt=sse&key=${apiKey}`;
+          const proxyUrl = this.getProxyUrl();
 
           const requestBody = JSON.stringify({
+            mode: 'chat',
             contents,
             systemInstruction: {
               parts: [{ text: systemInstruction }],
@@ -189,31 +187,21 @@ DIRETRIZES DE RESPOSTA:
             },
           });
 
-          let response = await fetch(url, {
+          const response = await fetch(proxyUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+              'apikey': environment.supabase.anonKey,
             },
             signal: abortController.signal,
             body: requestBody,
           });
 
-          // Fallback resiliente caso a API retorne 404 (model not found)
-          if (response.status === 404) {
-            url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${apiKey}`;
-            response = await fetch(url, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              signal: abortController.signal,
-              body: requestBody,
-            });
-          }
-
           if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Erro na API do Gemini (${response.status}): ${errorText}`);
+            const errorData = await response.json().catch(() => null);
+            const errorMsg = errorData?.error || (await response.text());
+            throw new Error(`Falha no proxy da IA (${response.status}): ${errorMsg}`);
           }
 
           if (!response.body) {
@@ -286,7 +274,6 @@ DIRETRIZES DE RESPOSTA:
       const reader = new FileReader();
       reader.onload = () => {
         const result = reader.result as string;
-        // result é do tipo: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ..."
         const commaIndex = result.indexOf(',');
         const base64Data = commaIndex !== -1 ? result.substring(commaIndex + 1) : result;
         const mimeType = file.type || 'image/jpeg';
@@ -298,15 +285,13 @@ DIRETRIZES DE RESPOSTA:
   }
 
   /**
-   * Modo Visão: Extrai dados estruturados de um comprovante ou nota fiscal.
+   * Modo Visão: Extrai dados estruturados de um comprovante ou nota fiscal via Edge Function proxy.
    */
   async extractReceiptData(file: File): Promise<ReceiptExtractionResult> {
-    const apiKey = this.getApiKey();
+    const token = await this.supabase.getAccessToken();
 
-    if (!this.hasApiKey()) {
-      throw new Error(
-        'Chave da API do Google Gemini não configurada. Defina GEMINI_API_KEY no arquivo .env.'
-      );
+    if (!token) {
+      throw new Error('Sessão expirada. Faça login novamente para ler comprovantes.');
     }
 
     const { base64Data, mimeType } = await this.fileToBase64(file);
@@ -326,9 +311,10 @@ Responda ESTRITAMENTE com um objeto JSON válido (sem texto introdutório, sem f
 }
 `.trim();
 
-    let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`;
+    const proxyUrl = this.getProxyUrl();
 
     const requestBody = JSON.stringify({
+      mode: 'vision',
       contents: [
         {
           parts: [
@@ -350,29 +336,20 @@ Responda ESTRITAMENTE com um objeto JSON válido (sem texto introdutório, sem f
       },
     });
 
-    let response = await fetch(url, {
+    const response = await fetch(proxyUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'apikey': environment.supabase.anonKey,
       },
       body: requestBody,
     });
 
-    // Fallback resiliente caso a API retorne 404 (model not found)
-    if (response.status === 404) {
-      url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-      response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: requestBody,
-      });
-    }
-
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Falha ao ler comprovante com Gemini (${response.status}): ${errorText}`);
+      const errorData = await response.json().catch(() => null);
+      const errorMsg = errorData?.error || (await response.text());
+      throw new Error(`Falha ao ler comprovante com IA (${response.status}): ${errorMsg}`);
     }
 
     const result = await response.json();
@@ -386,8 +363,11 @@ Responda ESTRITAMENTE com um objeto JSON válido (sem texto introdutório, sem f
     const parsed = JSON.parse(rawText.trim());
 
     // Validações defensivas
-    const amount = typeof parsed.amount === 'number' ? Math.abs(parsed.amount) : parseFloat(String(parsed.amount).replace(/[^\d.-]/g, '')) || 0;
-    
+    const amount =
+      typeof parsed.amount === 'number'
+        ? Math.abs(parsed.amount)
+        : parseFloat(String(parsed.amount).replace(/[^\d.-]/g, '')) || 0;
+
     let date = String(parsed.date || '').trim();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       const now = new Date();

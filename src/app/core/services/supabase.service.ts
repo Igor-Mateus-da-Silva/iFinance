@@ -127,4 +127,18 @@ export class SupabaseService {
     this.currentSession.set(null);
     this.currentUser.set(null);
   }
+
+  /**
+   * Obtém o token JWT da sessão ativa para chamadas seguras autenticadas.
+   * Executa getSession() para renovar automaticamente o token via refresh_token caso esteja expirado.
+   */
+  async getAccessToken(): Promise<string | null> {
+    const { data, error } = await this.supabase.auth.getSession();
+    if (error || !data.session) {
+      return null;
+    }
+    this.currentSession.set(data.session);
+    this.currentUser.set(data.session.user);
+    return data.session.access_token;
+  }
 }

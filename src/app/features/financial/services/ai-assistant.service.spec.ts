@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { AiAssistantService } from './ai-assistant.service';
 import { FinancialDashboardService } from './financial-dashboard.service';
 import { FinanceSetupService } from './finance-setup.service';
+import { SupabaseService } from '../../../core/services/supabase.service';
 
 import { firstValueFrom } from 'rxjs';
 
@@ -9,6 +10,7 @@ describe('AiAssistantService', () => {
   let service: AiAssistantService;
   let mockDashboardService: any;
   let mockSetupService: any;
+  let mockSupabaseService: any;
 
   beforeEach(() => {
     mockDashboardService = {
@@ -40,11 +42,16 @@ describe('AiAssistantService', () => {
       ]),
     };
 
+    mockSupabaseService = {
+      getAccessToken: vi.fn().mockResolvedValue('fake-jwt-token-123'),
+    };
+
     TestBed.configureTestingModule({
       providers: [
         AiAssistantService,
         { provide: FinancialDashboardService, useValue: mockDashboardService },
         { provide: FinanceSetupService, useValue: mockSetupService },
+        { provide: SupabaseService, useValue: mockSupabaseService },
       ],
     });
 
@@ -92,13 +99,11 @@ describe('AiAssistantService', () => {
   });
 
   describe('Streaming de Mensagens', () => {
-    it('deve avisar amigavelmente quando a chave de API não estiver configurada', async () => {
-      // Força apiKey vazia
-      (service as any).getApiKey = () => '';
+    it('deve avisar amigavelmente quando o usuário não possuir sessão ativa', async () => {
+      mockSupabaseService.getAccessToken.mockResolvedValue(null);
 
       const message = await firstValueFrom(service.sendMessageStream('Posso gastar R$ 100 hoje?'));
-      expect(message).toContain('Chave da API do Google Gemini não encontrada');
+      expect(message).toContain('Sessão não encontrada');
     });
   });
 });
-
