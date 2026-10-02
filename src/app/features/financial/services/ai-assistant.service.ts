@@ -1,9 +1,12 @@
 import { Injectable, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { SupabaseService } from '../../../core/services/supabase.service';
 import { FinancialDashboardService } from './financial-dashboard.service';
 import { FinanceSetupService } from './finance-setup.service';
+import { PortfolioService } from '../../investments/services/portfolio.service';
+import { AssetClassesService } from '../../investments/services/asset-classes.service';
 
 export interface ReceiptExtractionResult {
   amount: number;
@@ -11,6 +14,14 @@ export interface ReceiptExtractionResult {
   description: string;
   suggested_category_type: 'INCOME' | 'EXPENSE';
   suggested_category_name?: string;
+}
+
+export interface InvestmentExtractionResult {
+  ticker: string;
+  quantity: number;
+  price: number;
+  date: string; // 'YYYY-MM-DD'
+  total: number;
 }
 
 export interface ChatMessage {
@@ -21,6 +32,8 @@ export interface ChatMessage {
   isStreaming?: boolean;
   isReceipt?: boolean;
   receiptData?: ReceiptExtractionResult;
+  isInvestmentNote?: boolean;
+  investmentData?: InvestmentExtractionResult;
 }
 
 export interface TransactionModalPrefill {
@@ -31,17 +44,38 @@ export interface TransactionModalPrefill {
   suggestedCategoryName?: string;
 }
 
+export interface AssetModalPrefill {
+  ticker: string;
+  quantity: number;
+  current_price: number;
+  date?: string;
+  asset_class_id?: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class AiAssistantService {
   private readonly supabase = inject(SupabaseService);
+  private readonly router = inject(Router);
   private readonly dashboardService = inject(FinancialDashboardService);
   private readonly setupService = inject(FinanceSetupService);
+  private readonly portfolioService = inject(PortfolioService);
+  private readonly assetClassesService = inject(AssetClassesService);
 
-  // Signal reativo para abrir o modal de novo lançamento pré-preenchido
+  // Signals reativos para pré-preenchimento de modais pela IA
   readonly modalPrefill = signal<TransactionModalPrefill | null>(null);
   readonly isModalRequested = signal<boolean>(false);
+
+  readonly assetPrefill = signal<AssetModalPrefill | null>(null);
+  readonly isAssetModalRequested = signal<boolean>(false);
+
+  /**
+   * Identifica dinamicamente se o usuário está navegando no Módulo de Investimentos
+   */
+  isInvestmentsRoute(): boolean {
+    return this.router.url.startsWith('/investments');
+  }
 
   /**
    * Obtém a URL da Edge Function gemini-proxy no Supabase.
@@ -54,23 +88,33 @@ export class AiAssistantService {
   }
 
   /**
-   * Dispara a abertura do modal de transação com os dados pré-preenchidos pela IA.
+   * Dispara a abertura do modal de transação financeira com os dados pré-preenchidos.
    */
   openTransactionWithPrefill(data: TransactionModalPrefill): void {
     this.modalPrefill.set(data);
     this.isModalRequested.set(true);
   }
 
-  /**
-   * Limpa o estado da requisição do modal.
-   */
   clearModalRequest(): void {
     this.modalPrefill.set(null);
     this.isModalRequested.set(false);
   }
 
   /**
-   * Monta o contexto financeiro consolidado em tempo real para instruir o Gemini.
+   * Dispara a abertura do modal de ativo com os dados pré-preenchidos da nota de corretagem.
+   */
+  openAssetWithPrefill(data: AssetModalPrefill): void {
+    this.assetPrefill.set(data);
+    this.isAssetModalRequested.set(true);
+  }
+
+  clearAssetModalRequest(): void {
+    this.assetPrefill.set(null);
+    this.isAssetModalRequested.set(false);
+  }
+
+  /**
+   * Monta o contexto financeiro consolidado em tempo real (para rotas de Controle Financeiro).
    */
   async buildFinancialContext(): Promise<string> {
     const now = new Date();
@@ -98,7 +142,7 @@ export class AiAssistantService {
       const catsList = categories.map((c) => `${c.name} (${c.type})`).join(', ');
 
       return `
-[DADOS EM TEMPO REAL DO USUÁRIO]:
+[DADOS EM TEMPO REAL DO CONTROLE FINANCEIRO]:
 - Data/Hora Atual: ${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR')}
 - Mês de Competência: ${currentYearMonth}
 - Saldo Consolidado em Contas (Dinheiro Real Hoje): R$ ${metrics.totalCurrentBalance.toFixed(2)}
@@ -117,12 +161,71 @@ ${topCatsSummary || 'Nenhuma despesa registrada ainda'}
 ${catsList || 'Sem categorias'}
 `.trim();
     } catch (err) {
-      return `[Aviso]: Não foi possível obter as métricas em tempo real no momento (${err}).`;
+      return `[Aviso]: Não foi possível obter as métricas financeiras em tempo real (${err}).`;
     }
   }
 
   /**
-   * Envia uma mensagem para o Gemini através da Edge Function gemini-proxy usando SSE para streaming em tempo real.
+   * Monta o contexto da carteira e metas de alocação (para rotas de Investimentos).
+   */
+  async buildInvestmentsContext(): Promise<string> {
+    try {
+      const [holdings, classes] = await Promise.all([
+        this.portfolioService.getHoldings(),
+        this.assetClassesService.getClasses(),
+      ]);
+
+      const totalPortfolioValue = holdings.reduce((sum, h) => sum + h.totalValue, 0);
+
+      // Mapeia classes e calcula percentual atual consolidado vs meta ideal
+      const classMap = new Map<string, { name: string; targetPercentage: number; currentTotal: number }>();
+      for (const cls of classes) {
+        classMap.set(cls.id, {
+          name: cls.name,
+          targetPercentage: Number(cls.target_percentage) || 0,
+          currentTotal: 0,
+        });
+      }
+
+      for (const h of holdings) {
+        if (classMap.has(h.assetClassId)) {
+          classMap.get(h.assetClassId)!.currentTotal += h.totalValue;
+        }
+      }
+
+      const classSummaries: string[] = [];
+      for (const item of classMap.values()) {
+        const currentPct = totalPortfolioValue > 0 ? (item.currentTotal / totalPortfolioValue) * 100 : 0;
+        const diff = currentPct - item.targetPercentage;
+        const status = diff < -0.5 ? 'ABAIXO DA META (Prioridade de Aporte)' : diff > 0.5 ? 'ACIMA DA META' : 'EQUILIBRADO';
+        classSummaries.push(
+          `- Classe "${item.name}": Atual: R$ ${item.currentTotal.toFixed(2)} (${currentPct.toFixed(1)}%) | Meta Ideal: ${item.targetPercentage}% | Diferença: ${diff > 0 ? '+' : ''}${diff.toFixed(1)}% [${status}]`
+        );
+      }
+
+      const holdingsSummaries = holdings.map((h) => {
+        const weight = totalPortfolioValue > 0 ? (h.totalValue / totalPortfolioValue) * 100 : 0;
+        return `- ${h.ticker} (${h.assetClassName}): ${h.quantity} un. @ R$ ${h.currentPrice.toFixed(2)} = R$ ${h.totalValue.toFixed(2)} (${weight.toFixed(1)}% da carteira)`;
+      });
+
+      return `
+[CARTEIRA DE INVESTIMENTOS DO USUÁRIO]:
+- Patrimônio Total Consolidado: R$ ${totalPortfolioValue.toFixed(2)}
+- Total de Ativos em Custódia: ${holdings.length}
+
+[DISTRIBUIÇÃO POR CLASSE DE ATIVOS (ATUAL VS META ESTRATÉGICA)]:
+${classSummaries.join('\n') || 'Nenhuma classe configurada'}
+
+[POSIÇÕES INDIVIDUAIS EM CUSTÓDIA]:
+${holdingsSummaries.join('\n') || 'Nenhum ativo cadastrado na carteira'}
+`.trim();
+    } catch (err) {
+      return `[Aviso]: Não foi possível carregar os dados de investimentos no momento (${err}).`;
+    }
+  }
+
+  /**
+   * Envia uma mensagem para o Gemini com injeção dinâmica de contexto baseada na rota ativa.
    */
   sendMessageStream(message: string, history: ChatMessage[] = []): Observable<string> {
     return new Observable<string>((subscriber) => {
@@ -140,25 +243,42 @@ ${catsList || 'Sem categorias'}
             return;
           }
 
-          const financialContext = await this.buildFinancialContext();
+          const isInvestments = this.isInvestmentsRoute();
+          let systemInstruction = '';
 
-          const systemInstruction = `
+          if (isInvestments) {
+            const investmentsContext = await this.buildInvestmentsContext();
+            systemInstruction = `
+Você é o "iFinance AI", o estrategista de investimentos e consultor de alocação de patrimônio do iFinance Capital.
+Seu objetivo é orientar o investidor com análises técnicas, visão de longo prazo e sabedoria de rebalanceamento passivo, baseando-se estritamente na carteira real e nas metas de alocação fornecidas abaixo.
+
+${investmentsContext}
+
+DIRETRIZES DE RESPOSTA PARA INVESTIMENTOS:
+1. Responda em Português do Brasil (PT-BR).
+2. Seja pragmático, analítico e claro. Use formatação Markdown (negrito, listas e tabelas comparativas quando oportuno).
+3. Quando o usuário perguntar onde aportar (ex: "Onde devo aportar meus R$ 500 hoje?" ou "Qual classe está mais defasada?"), analise quais classes estão marcadas como "ABAIXO DA META (Prioridade de Aporte)". Explique a lógica de rebalanceamento passivo: comprar o que está para trás para equilibrar os percentuais sem precisar vender ativos.
+4. Explique riscos e diversificação com equilíbrio e sobriedade, respeitando sempre a meta da estratégia do usuário.
+5. Nunca invente dados que contradigam a carteira real informada acima.
+`.trim();
+          } else {
+            const financialContext = await this.buildFinancialContext();
+            systemInstruction = `
 Você é o "iFinance AI", o assistente financeiro pessoal inteligente do aplicativo iFinance Capital.
 Seu objetivo é orientar o usuário com sabedoria, clareza e pragmatismo, cruzando sempre as perguntas dele com o seu contexto financeiro real fornecido abaixo.
 
 ${financialContext}
 
-DIRETRIZES DE RESPOSTA:
+DIRETRIZES DE RESPOSTA FINANCEIRA:
 1. Responda em Português do Brasil (PT-BR).
 2. Seja conciso, direto e amigável. Use formatação Markdown (negrito, listas e emojis pontuais).
 3. Quando o usuário perguntar se pode comprar algo (ex: "Posso gastar R$ 200 em pizza?"), avalie se isso cabe no grupo "Desejos Pessoais / Não essenciais", se o grupo já está no limite ou estourado, e alerte sobre o impacto no saldo.
 4. Nunca invente dados que contradigam o contexto financeiro acima.
 `.trim();
+          }
 
-          // Constrói o histórico no formato esperado pela API do Gemini
+          // Constrói o histórico de mensagens
           const contents: any[] = [];
-
-          // Adiciona as mensagens anteriores (até 10 mensagens para economia de tokens)
           const recentHistory = history.slice(-10);
           for (const msg of recentHistory) {
             contents.push({
@@ -167,7 +287,6 @@ DIRETRIZES DE RESPOSTA:
             });
           }
 
-          // Adiciona a mensagem atual
           contents.push({
             role: 'user',
             parts: [{ text: message }],
@@ -218,7 +337,6 @@ DIRETRIZES DE RESPOSTA:
 
             buffer += decoder.decode(value, { stream: true });
             const lines = buffer.split('\n');
-            // Mantém a última linha potencialmente incompleta no buffer
             buffer = lines.pop() || '';
 
             for (const line of lines) {
@@ -234,14 +352,13 @@ DIRETRIZES DE RESPOSTA:
                       subscriber.next(chunkText);
                     }
                   } catch {
-                    // Ignora chunks parciais ou formatações especiais de SSE
+                    // Ignora chunks parciais de SSE
                   }
                 }
               }
             }
           }
 
-          // Processa qualquer resíduo restante no buffer
           if (buffer.trim().startsWith('data: ')) {
             try {
               const parsed = JSON.parse(buffer.trim().substring(6).trim());
@@ -267,7 +384,7 @@ DIRETRIZES DE RESPOSTA:
   }
 
   /**
-   * Converte um arquivo do tipo File em string Base64 pura (sem cabeçalho data:image/...).
+   * Converte um arquivo do tipo File em string Base64 pura.
    */
   async fileToBase64(file: File): Promise<{ base64Data: string; mimeType: string }> {
     return new Promise((resolve, reject) => {
@@ -285,7 +402,7 @@ DIRETRIZES DE RESPOSTA:
   }
 
   /**
-   * Modo Visão: Extrai dados estruturados de um comprovante ou nota fiscal via Edge Function proxy.
+   * Modo Visão: Extrai dados estruturados de um comprovante financeiro (Controle Financeiro).
    */
   async extractReceiptData(file: File): Promise<ReceiptExtractionResult> {
     const token = await this.supabase.getAccessToken();
@@ -359,10 +476,8 @@ Responda ESTRITAMENTE com um objeto JSON válido (sem texto introdutório, sem f
       throw new Error('O Gemini não retornou nenhum dado analisável para esta imagem.');
     }
 
-    // Sanitiza e faz o parse do JSON
     const parsed = JSON.parse(rawText.trim());
 
-    // Validações defensivas
     const amount =
       typeof parsed.amount === 'number'
         ? Math.abs(parsed.amount)
@@ -384,6 +499,110 @@ Responda ESTRITAMENTE com um objeto JSON válido (sem texto introdutório, sem f
       description,
       suggested_category_type,
       suggested_category_name,
+    };
+  }
+
+  /**
+   * Modo Visão: Extrai dados estruturados de Notas de Corretagem ou comprovantes de ativos (Controle de Investimentos).
+   */
+  async extractInvestmentData(file: File): Promise<InvestmentExtractionResult> {
+    const token = await this.supabase.getAccessToken();
+
+    if (!token) {
+      throw new Error('Sessão expirada. Faça login novamente para ler notas de corretagem.');
+    }
+
+    const { base64Data, mimeType } = await this.fileToBase64(file);
+
+    const prompt = `
+Você é um auditor financeiro especialista em notas de corretagem B3, extratos de corretoras brasileiras (XP, BTG, Clear, NuInvest, Rico, Inter, etc.) e comprovantes de compra de ações, FIIs, ETFs, BDRs e Criptoativos.
+
+Analise a imagem anexada com precisão cirúrgica e extraia os dados essenciais da operação de compra/investimento.
+Responda ESTRITAMENTE com um objeto JSON válido (sem texto introdutório, sem formatações markdown adicionais) no seguinte formato:
+
+{
+  "ticker": string (código de negociação do ativo em letras maiúsculas, ex: "PETR4", "IVVB11", "MXRF11", "HGLG11", "BTC"),
+  "quantity": number (quantidade de cotas ou ações negociadas como número positivo, ex: 100 ou 10),
+  "price": number (preço unitário da cota/ação em reais como número positivo decimal, ex: 38.50),
+  "date": string (data da operação no formato YYYY-MM-DD. Se ano não for explícito, assuma o ano atual ${new Date().getFullYear()})
+}
+`.trim();
+
+    const proxyUrl = this.getProxyUrl();
+
+    const requestBody = JSON.stringify({
+      mode: 'vision',
+      contents: [
+        {
+          parts: [
+            {
+              inlineData: {
+                mimeType,
+                data: base64Data,
+              },
+            },
+            {
+              text: prompt,
+            },
+          ],
+        },
+      ],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        temperature: 0.1,
+      },
+    });
+
+    const response = await fetch(proxyUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'apikey': environment.supabase.anonKey,
+      },
+      body: requestBody,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      const errorMsg = errorData?.error || (await response.text());
+      throw new Error(`Falha ao ler nota de corretagem com IA (${response.status}): ${errorMsg}`);
+    }
+
+    const result = await response.json();
+    const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!rawText) {
+      throw new Error('O Gemini não retornou nenhum dado analisável para esta nota de corretagem.');
+    }
+
+    const parsed = JSON.parse(rawText.trim());
+
+    const ticker = String(parsed.ticker || 'ATIVO').trim().toUpperCase();
+    const quantity =
+      typeof parsed.quantity === 'number'
+        ? Math.abs(parsed.quantity)
+        : parseFloat(String(parsed.quantity).replace(/[^\d.-]/g, '')) || 1;
+
+    const price =
+      typeof parsed.price === 'number'
+        ? Math.abs(parsed.price)
+        : parseFloat(String(parsed.price).replace(/[^\d.-]/g, '')) || 0;
+
+    let date = String(parsed.date || '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      const now = new Date();
+      date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    }
+
+    const total = Math.round(quantity * price * 100) / 100;
+
+    return {
+      ticker,
+      quantity,
+      price: Math.round(price * 100) / 100,
+      date,
+      total,
     };
   }
 }

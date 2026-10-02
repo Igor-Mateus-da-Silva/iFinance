@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
+  AssetClass,
   Category,
   CreditCard,
   FinancialAccount,
@@ -11,10 +12,13 @@ import {
 import {
   AiAssistantService,
   ChatMessage,
+  InvestmentExtractionResult,
   ReceiptExtractionResult,
 } from '../services/ai-assistant.service';
 import { FinanceSetupService } from '../services/finance-setup.service';
 import { TransactionService } from '../services/transaction.service';
+import { PortfolioService } from '../../investments/services/portfolio.service';
+import { AssetClassesService } from '../../investments/services/asset-classes.service';
 import { ToastService } from '../../../core/services/toast.service';
 
 @Component({
@@ -27,7 +31,7 @@ import { ToastService } from '../../../core/services/toast.service';
       <button
         type="button"
         (click)="toggleChat()"
-        [title]="isOpen() ? 'Fechar Assistente IA' : 'Abrir Assistente AI'"
+        [title]="isOpen() ? 'Fechar Assistente IA' : (isInvestments() ? 'Abrir Assistente de Investimentos' : 'Abrir Assistente Financeiro')"
         class="relative group flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 active:scale-95 transition-all">
         <div class="relative flex items-center justify-center">
           <svg class="w-5 h-5 text-white animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -38,7 +42,9 @@ import { ToastService } from '../../../core/services/toast.service';
             <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
           </span>
         </div>
-        <span class="hidden sm:inline font-semibold tracking-wide">Assistente AI</span>
+        <span class="hidden sm:inline font-semibold tracking-wide">
+          {{ isInvestments() ? 'IA Investimentos' : 'IA Financeira' }}
+        </span>
       </button>
     </div>
 
@@ -65,11 +71,15 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
           <div>
             <div class="flex items-center gap-2">
-              <h2 class="text-sm font-bold text-gray-900 tracking-tight">Assistente Financeiro</h2>
+              <h2 class="text-sm font-bold text-gray-900 tracking-tight">
+                {{ isInvestments() ? 'Assistente de Investimentos' : 'Assistente Financeiro' }}
+              </h2>
             </div>
             <p class="text-[11px] text-gray-500 flex items-center gap-1.5 mt-0.5">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              <span>Contexto financeiro em tempo real</span>
+              <span>
+                {{ isInvestments() ? 'Carteira & alocação estratégica em tempo real' : 'Contexto financeiro em tempo real' }}
+              </span>
             </p>
           </div>
         </div>
@@ -119,7 +129,7 @@ import { ToastService } from '../../../core/services/toast.service';
                 }
               </div>
 
-              <!-- Card Especial: Comprovante Reconhecido -->
+              <!-- Card Especial: Comprovante Financeiro Reconhecido -->
               @if (msg.receiptData; as receipt) {
                 <div class="mt-2.5 p-3 rounded-xl bg-emerald-50 border border-emerald-200 space-y-2">
                   <div class="flex items-center justify-between text-[11px]">
@@ -150,6 +160,35 @@ import { ToastService } from '../../../core/services/toast.service';
                 </div>
               }
 
+              <!-- Card Especial: Nota de Corretagem Reconhecida (Investimentos) -->
+              @if (msg.investmentData; as inv) {
+                <div class="mt-2.5 p-3 rounded-xl bg-blue-50 border border-blue-200 space-y-2">
+                  <div class="flex items-center justify-between text-[11px]">
+                    <span class="font-bold text-blue-900 flex items-center gap-1">
+                      <span>✓ Nota de Corretagem Reconhecida</span>
+                    </span>
+                    <span class="font-mono text-gray-500">{{ inv.date }}</span>
+                  </div>
+
+                  <div class="text-xs space-y-0.5">
+                    <p class="font-black text-blue-950 text-sm tracking-wide">{{ inv.ticker }}</p>
+                    <p class="text-gray-700">
+                      Operação: <strong class="text-gray-900 font-mono">{{ inv.quantity }} un.</strong> @ <strong class="text-gray-900 font-mono">{{ inv.price | currency: 'BRL':'symbol':'1.2-2' }}</strong>
+                    </p>
+                    <p class="text-gray-700">
+                      Valor Total: <strong class="text-blue-700 font-mono font-bold">{{ inv.total | currency: 'BRL':'symbol':'1.2-2' }}</strong>
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    (click)="openModalFromInvestment(inv)"
+                    class="w-full mt-1 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] transition-all flex items-center justify-center gap-1.5 shadow-xs">
+                    <span>Adicionar Ativo à Carteira →</span>
+                  </button>
+                </div>
+              }
+
               <div
                 [class.text-blue-100]="msg.role === 'user'"
                 [class.text-gray-400]="msg.role === 'model'"
@@ -160,7 +199,7 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
         }
 
-        <!-- Indicador de Análise de Comprovante -->
+        <!-- Indicador de Análise de Imagem (Comprovante ou Nota) -->
         @if (isAnalyzingReceipt()) {
           <div class="flex items-start gap-2.5">
             <div class="w-7 h-7 rounded-lg bg-blue-50 border border-blue-200/60 flex items-center justify-center flex-shrink-0 text-blue-600 animate-spin">
@@ -170,37 +209,60 @@ import { ToastService } from '../../../core/services/toast.service';
             </div>
             <div class="p-3.5 rounded-2xl rounded-bl-sm bg-gray-100 border border-gray-200 text-gray-700 flex items-center gap-2">
               <span class="w-2 h-2 rounded-full bg-blue-600 animate-ping"></span>
-              <span>Analisando comprovante com visão computacional do Gemini...</span>
+              <span>
+                {{ isInvestments() ? 'Analisando nota de corretagem com visão computacional do Gemini...' : 'Analisando comprovante com visão computacional do Gemini...' }}
+              </span>
             </div>
           </div>
         }
       </div>
 
-      <!-- Sugestões Rápidas de Perguntas -->
+      <!-- Sugestões Rápidas de Perguntas Dinâmicas por Rota -->
       @if (messages().length <= 2 && !isStreaming()) {
         <div class="px-4 py-2 bg-gray-50/80 border-t border-gray-200 overflow-x-auto flex items-center gap-1.5 no-scrollbar">
-          <button
-            type="button"
-            (click)="askQuickQuestion('Como está meu teto de gastos do mês?')"
-            class="px-2.5 py-1 rounded-full bg-white hover:bg-gray-100 border border-gray-200 text-[10px] text-gray-700 font-medium whitespace-nowrap transition-colors shadow-2xs">
-            📊 Meu teto de gastos?
-          </button>
-          <button
-            type="button"
-            (click)="askQuickQuestion('Posso gastar R$ 150 em lazer hoje?')"
-            class="px-2.5 py-1 rounded-full bg-white hover:bg-gray-100 border border-gray-200 text-[10px] text-gray-700 font-medium whitespace-nowrap transition-colors shadow-2xs">
-            🍕 Posso gastar R$ 150 em lazer?
-          </button>
-          <button
-            type="button"
-            (click)="askQuickQuestion('Onde mais gastei dinheiro este mês?')"
-            class="px-2.5 py-1 rounded-full bg-white hover:bg-gray-100 border border-gray-200 text-[10px] text-gray-700 font-medium whitespace-nowrap transition-colors shadow-2xs">
-            🔍 Onde mais gastei?
-          </button>
+          @if (isInvestments()) {
+            <button
+              type="button"
+              (click)="askQuickQuestion('Onde devo aportar meus R$ 500 hoje?')"
+              class="px-2.5 py-1 rounded-full bg-white hover:bg-gray-100 border border-gray-200 text-[10px] text-gray-700 font-medium whitespace-nowrap transition-colors shadow-2xs">
+              🎯 Onde aportar R$ 500 hoje?
+            </button>
+            <button
+              type="button"
+              (click)="askQuickQuestion('Quais classes estão mais abaixo da meta na minha estratégia?')"
+              class="px-2.5 py-1 rounded-full bg-white hover:bg-gray-100 border border-gray-200 text-[10px] text-gray-700 font-medium whitespace-nowrap transition-colors shadow-2xs">
+              ⚖️ Classes mais defasadas?
+            </button>
+            <button
+              type="button"
+              (click)="askQuickQuestion('Faça um diagnóstico geral da diversificação da minha carteira.')"
+              class="px-2.5 py-1 rounded-full bg-white hover:bg-gray-100 border border-gray-200 text-[10px] text-gray-700 font-medium whitespace-nowrap transition-colors shadow-2xs">
+              📈 Diagnóstico da carteira
+            </button>
+          } @else {
+            <button
+              type="button"
+              (click)="askQuickQuestion('Como está meu teto de gastos do mês?')"
+              class="px-2.5 py-1 rounded-full bg-white hover:bg-gray-100 border border-gray-200 text-[10px] text-gray-700 font-medium whitespace-nowrap transition-colors shadow-2xs">
+              📊 Meu teto de gastos?
+            </button>
+            <button
+              type="button"
+              (click)="askQuickQuestion('Posso gastar R$ 150 em lazer hoje?')"
+              class="px-2.5 py-1 rounded-full bg-white hover:bg-gray-100 border border-gray-200 text-[10px] text-gray-700 font-medium whitespace-nowrap transition-colors shadow-2xs">
+              🍕 Posso gastar R$ 150 em lazer?
+            </button>
+            <button
+              type="button"
+              (click)="askQuickQuestion('Onde mais gastei dinheiro este mês?')"
+              class="px-2.5 py-1 rounded-full bg-white hover:bg-gray-100 border border-gray-200 text-[10px] text-gray-700 font-medium whitespace-nowrap transition-colors shadow-2xs">
+              🔍 Onde mais gastei?
+            </button>
+          }
         </div>
       }
 
-      <!-- Rodapé: Campo de Texto, Câmera & Anexo de Comprovante -->
+      <!-- Rodapé: Campo de Texto, Câmera & Anexo de Documento -->
       <div class="p-4 border-t border-gray-200 bg-white space-y-2">
         <form (ngSubmit)="handleSendMessage()" class="flex items-center gap-2">
           <!-- Input oculto para carregar imagem da galeria/arquivos -->
@@ -225,7 +287,7 @@ import { ToastService } from '../../../core/services/toast.service';
             type="button"
             (click)="openCamera()"
             [disabled]="isStreaming() || isAnalyzingReceipt()"
-            title="Tirar foto de um comprovante com a câmera"
+            [title]="isInvestments() ? 'Fotografar nota de corretagem com a câmera' : 'Tirar foto de um comprovante com a câmera'"
             class="p-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-600 hover:text-blue-700 border border-gray-200 transition-colors flex items-center justify-center">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -238,7 +300,7 @@ import { ToastService } from '../../../core/services/toast.service';
             type="button"
             (click)="triggerFileInput()"
             [disabled]="isStreaming() || isAnalyzingReceipt()"
-            title="Anexar comprovante da galeria ou arquivo"
+            [title]="isInvestments() ? 'Anexar nota de corretagem da galeria ou arquivo' : 'Anexar comprovante da galeria ou arquivo'"
             class="p-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-600 hover:text-blue-700 border border-gray-200 transition-colors flex items-center justify-center">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
@@ -251,7 +313,7 @@ import { ToastService } from '../../../core/services/toast.service';
             [(ngModel)]="userInput"
             name="chatInput"
             [disabled]="isStreaming() || isAnalyzingReceipt()"
-            placeholder="Pergunte ao Gemini ou anexe um comprovante..."
+            [placeholder]="isInvestments() ? 'Pergunte sobre sua carteira ou anexe uma nota...' : 'Pergunte ao Gemini ou anexe um comprovante...'"
             class="flex-1 px-3.5 py-2.5 rounded-xl bg-gray-50/80 border border-gray-300 text-gray-900 text-xs placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600" />
 
           <!-- Botão Enviar -->
@@ -274,7 +336,9 @@ import { ToastService } from '../../../core/services/toast.service';
           <div class="p-4 border-b border-gray-200 flex items-center justify-between">
             <div class="flex items-center gap-2">
               <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <h3 class="text-sm font-bold text-gray-900">Fotografar Comprovante</h3>
+              <h3 class="text-sm font-bold text-gray-900">
+                {{ isInvestments() ? 'Fotografar Nota de Corretagem' : 'Fotografar Comprovante' }}
+              </h3>
             </div>
             <button
               type="button"
@@ -290,10 +354,10 @@ import { ToastService } from '../../../core/services/toast.service';
               <video #videoElement autoplay playsinline class="w-full h-full object-cover"></video>
               <canvas #canvasElement class="hidden"></canvas>
 
-              <!-- Guia visual para enquadrar comprovante -->
+              <!-- Guia visual para enquadrar documento -->
               <div class="absolute inset-4 border-2 border-dashed border-emerald-400/70 rounded-xl pointer-events-none flex items-center justify-center">
                 <span class="text-[10px] font-semibold text-emerald-800 bg-white/90 backdrop-blur-xs px-2.5 py-1 rounded-full border border-emerald-300 shadow-xs">
-                  Enquadre o comprovante aqui
+                  {{ isInvestments() ? 'Enquadre a nota de corretagem aqui' : 'Enquadre o comprovante aqui' }}
                 </span>
               </div>
             </div>
@@ -329,7 +393,7 @@ import { ToastService } from '../../../core/services/toast.service';
       </div>
     }
 
-    <!-- 5. Modal de Novo Lançamento Acionado pelo Chat ou Diretamente -->
+    <!-- 5. Modal de Novo Lançamento Financeiro Pré-preenchido por IA -->
     @if (showTransactionModal()) {
       <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-950/40 backdrop-blur-xs overflow-y-auto">
         <div class="w-full max-w-lg bg-white border border-gray-200 rounded-3xl shadow-2xl p-6 sm:p-8 my-8 animate-in fade-in zoom-in-95 duration-200">
@@ -483,12 +547,127 @@ import { ToastService } from '../../../core/services/toast.service';
         </div>
       </div>
     }
+
+    <!-- 6. Modal de Adicionar Ativo à Carteira (Investimentos) Pré-preenchido por IA -->
+    @if (showAssetModal()) {
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-950/40 backdrop-blur-xs overflow-y-auto">
+        <div class="w-full max-w-lg bg-white border border-gray-200 rounded-3xl shadow-2xl p-6 sm:p-8 my-8 animate-in fade-in zoom-in-95 duration-200">
+          
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <span>Adicionar Ativo à Carteira</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200/60">
+                  Nota lida por IA
+                </span>
+              </h3>
+              <p class="text-xs text-gray-500 mt-0.5">Revise os dados extraídos da nota de corretagem antes de salvar na sua carteira.</p>
+            </div>
+            <button
+              type="button"
+              (click)="closeAssetModal()"
+              class="p-2 rounded-xl text-gray-400 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors">
+              ✕
+            </button>
+          </div>
+
+          <form (ngSubmit)="handleSaveAssetFromModal()" class="space-y-4">
+            <!-- Classe de Ativo -->
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 mb-1" for="assetClassSelect">Classe de Ativo *</label>
+              <select
+                id="assetClassSelect"
+                [(ngModel)]="assetModalForm.asset_class_id"
+                name="assetClassSelect"
+                required
+                class="w-full px-3.5 py-2.5 rounded-xl bg-gray-50/70 border border-gray-300 text-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600">
+                <option value="" disabled>Selecione uma classe</option>
+                @for (cls of assetClasses(); track cls.id) {
+                  <option [value]="cls.id">{{ formatClassOption(cls) }}</option>
+                }
+              </select>
+            </div>
+
+            <!-- Ticker -->
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 mb-1" for="modalTicker">Ticker / Código do Ativo *</label>
+              <input
+                id="modalTicker"
+                type="text"
+                required
+                [(ngModel)]="assetModalForm.ticker"
+                name="modalTicker"
+                placeholder="Ex: PETR4, IVVB11, MXRF11"
+                class="w-full px-3.5 py-2.5 rounded-xl bg-gray-50/70 border border-gray-300 text-gray-900 font-mono text-sm uppercase font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <!-- Cotação Unitária -->
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1" for="modalPrice">Cotação Unitária (R$) *</label>
+                <input
+                  id="modalPrice"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  required
+                  [(ngModel)]="assetModalForm.current_price"
+                  name="modalPrice"
+                  placeholder="0.00"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-gray-50/70 border border-gray-300 text-gray-900 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600" />
+              </div>
+
+              <!-- Quantidade -->
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1" for="modalQty">Quantidade *</label>
+                <input
+                  id="modalQty"
+                  type="number"
+                  step="any"
+                  min="0.000001"
+                  required
+                  [(ngModel)]="assetModalForm.quantity"
+                  name="modalQty"
+                  placeholder="0"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-gray-50/70 border border-gray-300 text-gray-900 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600" />
+              </div>
+            </div>
+
+            <!-- Total Estimado -->
+            <div class="p-3 bg-blue-50/70 rounded-xl border border-blue-200/80 flex items-center justify-between text-xs">
+              <span class="text-blue-900 font-medium">Valor Total da Operação:</span>
+              <strong class="text-blue-700 font-mono font-bold text-sm">
+                {{ ((assetModalForm.current_price || 0) * (assetModalForm.quantity || 0)) | currency: 'BRL':'symbol':'1.2-2' }}
+              </strong>
+            </div>
+
+            <!-- Botões de Ação do Modal -->
+            <div class="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+              <button
+                type="button"
+                (click)="closeAssetModal()"
+                class="px-4 py-2.5 rounded-xl text-xs font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 transition-colors">
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                [disabled]="!assetModalForm.ticker || !assetModalForm.asset_class_id || !assetModalForm.current_price || !assetModalForm.quantity || isSavingAsset()"
+                class="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition-all shadow-xs">
+                {{ isSavingAsset() ? 'Adicionando...' : 'Confirmar e Adicionar' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    }
   `,
 })
 export class AiChatComponent implements OnInit, OnDestroy {
   private readonly aiService = inject(AiAssistantService);
   private readonly transactionService = inject(TransactionService);
   private readonly setupService = inject(FinanceSetupService);
+  private readonly portfolioService = inject(PortfolioService);
+  private readonly assetClassesService = inject(AssetClassesService);
   private readonly toastService = inject(ToastService);
 
   @ViewChild('messagesContainer') private messagesContainer?: ElementRef;
@@ -501,9 +680,14 @@ export class AiChatComponent implements OnInit, OnDestroy {
   readonly isStreaming = signal<boolean>(false);
   readonly isAnalyzingReceipt = signal<boolean>(false);
   readonly isSaving = signal<boolean>(false);
+  readonly isSavingAsset = signal<boolean>(false);
   readonly showTransactionModal = signal<boolean>(false);
+  readonly showAssetModal = signal<boolean>(false);
   readonly showCameraModal = signal<boolean>(false);
   readonly cameraError = signal<string | null>(null);
+
+  // Rota ativa: detecta dinamicamente se o usuário está em Investimentos
+  readonly isInvestments = computed(() => this.aiService.isInvestmentsRoute());
 
   private mediaStream: MediaStream | null = null;
 
@@ -514,17 +698,20 @@ export class AiChatComponent implements OnInit, OnDestroy {
     {
       id: 'welcome',
       role: 'model',
-      text: 'Olá! Sou o assistente financeiro do **iFinance**. 🤖\nComo posso te ajudar?',
+      text: 'Olá! Sou o assistente inteligente do **iFinance**. 🤖\nComo posso te ajudar hoje?',
       timestamp: new Date(),
     },
   ]);
 
-  // Dados auxiliares para o modal de lançamento
+  // Dados auxiliares para o modal financeiro
   readonly accounts = signal<FinancialAccount[]>([]);
   readonly creditCards = signal<CreditCard[]>([]);
   readonly categories = signal<Category[]>([]);
 
-  // Formulário do modal pré-preenchido
+  // Dados auxiliares para o modal de investimentos
+  readonly assetClasses = signal<AssetClass[]>([]);
+
+  // Formulário do modal financeiro pré-preenchido
   modalForm = {
     type: 'EXPENSE' as TransactionType,
     amount: null as number | null,
@@ -536,20 +723,67 @@ export class AiChatComponent implements OnInit, OnDestroy {
     account_id: null as string | null,
   };
 
+  // Formulário do modal de ativo pré-preenchido
+  assetModalForm = {
+    ticker: '',
+    asset_class_id: '',
+    current_price: null as number | null,
+    quantity: null as number | null,
+    date: new Date().toISOString().split('T')[0],
+  };
+
+  constructor() {
+    // Sincroniza abertura remota de modais acionados pelo serviço
+    effect(() => {
+      if (this.aiService.isAssetModalRequested()) {
+        const prefill = this.aiService.assetPrefill();
+        if (prefill) {
+          this.assetModalForm = {
+            ticker: prefill.ticker,
+            asset_class_id:
+              prefill.asset_class_id ||
+              this.autoSelectAssetClass(prefill.ticker, this.assetClasses()),
+            current_price: prefill.current_price,
+            quantity: prefill.quantity,
+            date: prefill.date || new Date().toISOString().split('T')[0],
+          };
+          this.showAssetModal.set(true);
+          this.aiService.clearAssetModalRequest();
+        }
+      }
+
+      if (this.aiService.isModalRequested()) {
+        const prefill = this.aiService.modalPrefill();
+        if (prefill) {
+          this.openModalFromReceipt({
+            amount: prefill.amount,
+            date: prefill.date,
+            description: prefill.description,
+            suggested_category_type: prefill.type,
+            suggested_category_name: prefill.suggestedCategoryName,
+          });
+          this.aiService.clearModalRequest();
+        }
+      }
+    });
+  }
+
   ngOnInit(): void {
     this.loadAuxiliaryData();
   }
 
   async loadAuxiliaryData(): Promise<void> {
     try {
-      const [accs, cards, cats] = await Promise.all([
+      const [accs, cards, cats, classes] = await Promise.all([
         this.setupService.getAccounts(),
         this.setupService.getCreditCards(),
         this.setupService.getCategories(),
+        this.assetClassesService.getClasses(),
       ]);
       this.accounts.set(accs);
       this.creditCards.set(cards);
       this.categories.set(cats);
+      this.assetClasses.set(classes);
     } catch (err) {
       console.warn('Erro ao carregar dados auxiliares para o chat:', err);
     }
@@ -646,11 +880,12 @@ export class AiChatComponent implements OnInit, OnDestroy {
     canvas.toBlob(
       (blob) => {
         if (blob) {
-          const file = new File([blob], `comprovante-${Date.now()}.jpg`, {
+          const prefix = this.isInvestments() ? 'nota' : 'comprovante';
+          const file = new File([blob], `${prefix}-${Date.now()}.jpg`, {
             type: 'image/jpeg',
           });
           this.closeCamera();
-          this.processReceiptFile(file);
+          this.processFile(file);
         } else {
           this.triggerNativeCamera();
         }
@@ -679,10 +914,17 @@ export class AiChatComponent implements OnInit, OnDestroy {
 
     const file = input.files[0];
     input.value = ''; // Permite selecionar a mesma imagem novamente se necessário
-    await this.processReceiptFile(file);
+    await this.processFile(file);
   }
 
+  /**
+   * Mantido para retrocompatibilidade com testes unitários
+   */
   async processReceiptFile(file: File): Promise<void> {
+    return this.processFile(file);
+  }
+
+  async processFile(file: File): Promise<void> {
     // 1. Validação de Tipo de Arquivo (Defesa contra arquivos binários arbitrários)
     if (!file.type.startsWith('image/')) {
       this.messages.update((list) => [
@@ -706,7 +948,7 @@ export class AiChatComponent implements OnInit, OnDestroy {
         {
           id: crypto.randomUUID(),
           role: 'model',
-          text: '⚠️ **Arquivo muito grande:** A imagem excede o limite máximo permitido de 10 MB. Por favor, envie uma foto menor ou corte o comprovante.',
+          text: '⚠️ **Arquivo muito grande:** A imagem excede o limite máximo permitido de 10 MB. Por favor, envie uma foto menor ou corte o documento.',
           timestamp: new Date(),
         },
       ]);
@@ -725,47 +967,73 @@ export class AiChatComponent implements OnInit, OnDestroy {
     }
 
     const sizeKb = Math.round(fileToSend.size / 1024);
+    const isInv = this.isInvestments();
 
-    // Mensagem de usuário registrando o envio do comprovante otimizado
+    // Mensagem de usuário registrando o envio do documento
     this.messages.update((list) => [
       ...list,
       {
         id: crypto.randomUUID(),
         role: 'user',
-        text: `📷 [Comprovante anexado: ${file.name} (${sizeKb} KB)]`,
+        text: isInv
+          ? `📷 [Nota de Corretagem anexada: ${file.name} (${sizeKb} KB)]`
+          : `📷 [Comprovante anexado: ${file.name} (${sizeKb} KB)]`,
         timestamp: new Date(),
-        isReceipt: true,
+        isReceipt: !isInv,
+        isInvestmentNote: isInv,
       },
     ]);
     this.scrollToBottom();
 
     try {
-      const extracted = await this.aiService.extractReceiptData(fileToSend);
+      if (isInv) {
+        // Extração de Nota de Corretagem (Módulo de Investimentos)
+        const extracted = await this.aiService.extractInvestmentData(fileToSend);
 
-      // Adiciona mensagem da IA com o card interativo
-      this.messages.update((list) => [
-        ...list,
-        {
-          id: crypto.randomUUID(),
-          role: 'model',
-          text: `Analisei seu comprovante! Identifiquei uma transação de **${extracted.description}** no valor de **R$ ${extracted.amount.toFixed(
-            2
-          )}**.`,
-          timestamp: new Date(),
-          receiptData: extracted,
-        },
-      ]);
-      this.scrollToBottom();
+        this.messages.update((list) => [
+          ...list,
+          {
+            id: crypto.randomUUID(),
+            role: 'model',
+            text: `Analisei sua nota de corretagem! Identifiquei o ativo **${extracted.ticker}** (${extracted.quantity} un. a R$ ${extracted.price.toFixed(
+              2
+            )} = Total: R$ ${extracted.total.toFixed(2)}).`,
+            timestamp: new Date(),
+            investmentData: extracted,
+          },
+        ]);
+        this.scrollToBottom();
 
-      // Automaticamente abre o modal de Novo Lançamento pré-preenchido
-      this.openModalFromReceipt(extracted);
+        // Automaticamente abre o modal de Adicionar Ativo pré-preenchido
+        this.openModalFromInvestment(extracted);
+      } else {
+        // Extração de Comprovante Financeiro (Módulo Financeiro)
+        const extracted = await this.aiService.extractReceiptData(fileToSend);
+
+        this.messages.update((list) => [
+          ...list,
+          {
+            id: crypto.randomUUID(),
+            role: 'model',
+            text: `Analisei seu comprovante! Identifiquei uma transação de **${extracted.description}** no valor de **R$ ${extracted.amount.toFixed(
+              2
+            )}**.`,
+            timestamp: new Date(),
+            receiptData: extracted,
+          },
+        ]);
+        this.scrollToBottom();
+
+        // Automaticamente abre o modal de Novo Lançamento pré-preenchido
+        this.openModalFromReceipt(extracted);
+      }
     } catch (err: any) {
       this.messages.update((list) => [
         ...list,
         {
           id: crypto.randomUUID(),
           role: 'model',
-          text: `❌ Não consegui extrair os dados do comprovante: ${err.message || 'Erro desconhecido'}.`,
+          text: `❌ Não consegui extrair os dados do documento: ${err.message || 'Erro desconhecido'}.`,
           timestamp: new Date(),
         },
       ]);
@@ -843,7 +1111,6 @@ export class AiChatComponent implements OnInit, OnDestroy {
   }
 
   openModalFromReceipt(receipt: ReceiptExtractionResult): void {
-    // Tenta casar categoria sugerida com as categorias existentes
     let matchedCatId = '';
     if (receipt.suggested_category_name) {
       const found = this.categories().find((c) =>
@@ -870,6 +1137,107 @@ export class AiChatComponent implements OnInit, OnDestroy {
     this.showTransactionModal.set(false);
   }
 
+  openModalFromInvestment(note: InvestmentExtractionResult): void {
+    const selectedClassId = this.autoSelectAssetClass(note.ticker, this.assetClasses());
+    this.assetModalForm = {
+      ticker: note.ticker,
+      asset_class_id: selectedClassId,
+      current_price: note.price,
+      quantity: note.quantity,
+      date: note.date,
+    };
+    this.showAssetModal.set(true);
+  }
+
+  closeAssetModal(): void {
+    this.showAssetModal.set(false);
+  }
+
+  formatClassOption(cls: AssetClass): string {
+    if (cls.parent_id) {
+      const parent = this.assetClasses().find((p) => p.id === cls.parent_id);
+      return `${parent?.name || 'Pai'} ↳ ${cls.name}`;
+    }
+    return `${cls.name} (${cls.target_percentage}%)`;
+  }
+
+  private autoSelectAssetClass(ticker: string, classes: AssetClass[]): string {
+    if (!classes || classes.length === 0) return '';
+    const upper = ticker.toUpperCase();
+
+    // Se terminar em 11 ou 12: sugere FIIs ou ETFs
+    if (upper.endsWith('11') || upper.endsWith('12')) {
+      const fiiOrEtf = classes.find(
+        (c) =>
+          c.name.toLowerCase().includes('fii') ||
+          c.name.toLowerCase().includes('imobili') ||
+          c.name.toLowerCase().includes('etf')
+      );
+      if (fiiOrEtf) return fiiOrEtf.id;
+    }
+
+    // Se terminar em 3, 4, 5, 6, 33, 34: sugere Ações / BDRs
+    if (/([3-6]|33|34)$/.test(upper)) {
+      const acoes = classes.find(
+        (c) =>
+          c.name.toLowerCase().includes('ação') ||
+          c.name.toLowerCase().includes('acoes') ||
+          c.name.toLowerCase().includes('ações')
+      );
+      if (acoes) return acoes.id;
+    }
+
+    return classes[0].id;
+  }
+
+  async handleSaveAssetFromModal(): Promise<void> {
+    if (
+      !this.assetModalForm.ticker ||
+      !this.assetModalForm.asset_class_id ||
+      !this.assetModalForm.current_price ||
+      !this.assetModalForm.quantity
+    ) {
+      return;
+    }
+
+    this.isSavingAsset.set(true);
+    try {
+      const ticker = this.assetModalForm.ticker.trim().toUpperCase();
+      const currentPrice = Number(this.assetModalForm.current_price);
+      const quantity = Number(this.assetModalForm.quantity);
+      const total = currentPrice * quantity;
+
+      await this.portfolioService.createAssetWithHolding({
+        ticker,
+        asset_class_id: this.assetModalForm.asset_class_id,
+        current_price: currentPrice,
+        quantity: quantity,
+        average_price: currentPrice,
+      });
+
+      this.showAssetModal.set(false);
+
+      this.messages.update((list) => [
+        ...list,
+        {
+          id: crypto.randomUUID(),
+          role: 'model',
+          text: `✅ **Ativo adicionado à sua carteira com sucesso!**\n"${ticker}" (${quantity} un. a R$ ${currentPrice.toFixed(
+            2
+          )}) totalizando R$ ${total.toFixed(2)} já foi incorporado ao seu patrimônio.`,
+          timestamp: new Date(),
+        },
+      ]);
+
+      this.toastService.success(`Ativo "${ticker}" adicionado à carteira!`);
+      this.scrollToBottom();
+    } catch (err: any) {
+      this.toastService.error('Erro ao adicionar ativo: ' + (err.message || 'Falha no Supabase.'));
+    } finally {
+      this.isSavingAsset.set(false);
+    }
+  }
+
   async handleSaveFromModal(): Promise<void> {
     if (!this.modalForm.amount || !this.modalForm.description) return;
 
@@ -891,7 +1259,6 @@ export class AiChatComponent implements OnInit, OnDestroy {
 
       this.showTransactionModal.set(false);
 
-      // Notifica no chat que foi registrado
       this.messages.update((list) => [
         ...list,
         {
@@ -918,7 +1285,6 @@ export class AiChatComponent implements OnInit, OnDestroy {
 
     this.userInput = '';
 
-    // Adiciona mensagem do usuário
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: 'user',
@@ -926,7 +1292,6 @@ export class AiChatComponent implements OnInit, OnDestroy {
       timestamp: new Date(),
     };
 
-    // Cria mensagem placeholder para streaming da resposta
     const modelMsgId = crypto.randomUUID();
     const modelMsg: ChatMessage = {
       id: modelMsgId,

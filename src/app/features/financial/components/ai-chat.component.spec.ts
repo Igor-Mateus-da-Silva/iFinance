@@ -1,9 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
+import { signal } from '@angular/core';
 import { AiChatComponent } from './ai-chat.component';
 import { AiAssistantService } from '../services/ai-assistant.service';
 import { TransactionService } from '../services/transaction.service';
 import { FinanceSetupService } from '../services/finance-setup.service';
+import { PortfolioService } from '../../investments/services/portfolio.service';
+import { AssetClassesService } from '../../investments/services/asset-classes.service';
 
 describe('AiChatComponent', () => {
   let component: AiChatComponent;
@@ -11,9 +14,18 @@ describe('AiChatComponent', () => {
   let mockAiService: any;
   let mockTxService: any;
   let mockSetupService: any;
+  let mockPortfolioService: any;
+  let mockAssetClassesService: any;
 
   beforeEach(async () => {
     mockAiService = {
+      isInvestmentsRoute: vi.fn().mockReturnValue(false),
+      isModalRequested: signal(false),
+      isAssetModalRequested: signal(false),
+      modalPrefill: signal(null),
+      assetPrefill: signal(null),
+      clearModalRequest: vi.fn(),
+      clearAssetModalRequest: vi.fn(),
       sendMessageStream: vi.fn().mockReturnValue(of('Resposta', ' em', ' streaming')),
       extractReceiptData: vi.fn().mockResolvedValue({
         amount: 54.3,
@@ -21,6 +33,13 @@ describe('AiChatComponent', () => {
         description: 'Padaria Estrela',
         suggested_category_type: 'EXPENSE',
         suggested_category_name: 'Alimentação',
+      }),
+      extractInvestmentData: vi.fn().mockResolvedValue({
+        ticker: 'PETR4',
+        quantity: 100,
+        price: 38.5,
+        date: '2026-10-01',
+        total: 3850.0,
       }),
     };
 
@@ -34,12 +53,25 @@ describe('AiChatComponent', () => {
       getCategories: vi.fn().mockResolvedValue([{ id: 'cat-1', name: 'Alimentação', type: 'EXPENSE' }]),
     };
 
+    mockPortfolioService = {
+      createAssetWithHolding: vi.fn().mockResolvedValue(undefined),
+    };
+
+    mockAssetClassesService = {
+      getClasses: vi.fn().mockResolvedValue([
+        { id: 'cls-1', name: 'Ações Brasileiras', target_percentage: 40, parent_id: null },
+        { id: 'cls-2', name: 'Fundos Imobiliários (FIIs)', target_percentage: 30, parent_id: null },
+      ]),
+    };
+
     await TestBed.configureTestingModule({
       imports: [AiChatComponent],
       providers: [
         { provide: AiAssistantService, useValue: mockAiService },
         { provide: TransactionService, useValue: mockTxService },
         { provide: FinanceSetupService, useValue: mockSetupService },
+        { provide: PortfolioService, useValue: mockPortfolioService },
+        { provide: AssetClassesService, useValue: mockAssetClassesService },
       ],
     }).compileComponents();
 
@@ -52,6 +84,7 @@ describe('AiChatComponent', () => {
     expect(component.isOpen()).toBe(false);
     expect(component.messages().length).toBeGreaterThanOrEqual(1);
     expect(mockSetupService.getAccounts).toHaveBeenCalled();
+    expect(mockAssetClassesService.getClasses).toHaveBeenCalled();
   });
 
   it('deve alternar a abertura do drawer (toggleChat)', () => {
@@ -72,7 +105,7 @@ describe('AiChatComponent', () => {
     expect(component.isStreaming()).toBe(false);
   });
 
-  it('deve abrir o modal com dados pré-preenchidos a partir de um comprovante lido', () => {
+  it('deve abrir o modal financeiro com dados pré-preenchidos a partir de um comprovante lido', () => {
     component.openModalFromReceipt({
       amount: 120.5,
       date: '2026-10-01',
@@ -87,7 +120,47 @@ describe('AiChatComponent', () => {
     expect(component.modalForm.category_id).toBe('cat-1');
   });
 
-  it('deve salvar o lançamento e fechar o modal', async () => {
+  it('deve abrir o modal de investimentos com dados pré-preenchidos a partir de uma nota de corretagem lida', () => {
+    component.openModalFromInvestment({
+      ticker: 'PETR4',
+      quantity: 50,
+      price: 36.2,
+      date: '2026-10-02',
+      total: 1810.0,
+    });
+
+    expect(component.showAssetModal()).toBe(true);
+    expect(component.assetModalForm.ticker).toBe('PETR4');
+    expect(component.assetModalForm.quantity).toBe(50);
+    expect(component.assetModalForm.current_price).toBe(36.2);
+    expect(component.assetModalForm.asset_class_id).toBe('cls-1'); // Auto-identificou Ações
+  });
+
+  it('deve salvar o ativo no módulo de investimentos e fechar o modal', async () => {
+    component.assetModalForm = {
+      ticker: 'MXRF11',
+      asset_class_id: 'cls-2',
+      current_price: 10.5,
+      quantity: 100,
+      date: '2026-10-02',
+    };
+    component.showAssetModal.set(true);
+
+    await component.handleSaveAssetFromModal();
+
+    expect(mockPortfolioService.createAssetWithHolding).toHaveBeenCalledWith({
+      ticker: 'MXRF11',
+      asset_class_id: 'cls-2',
+      current_price: 10.5,
+      quantity: 100,
+      average_price: 10.5,
+    });
+    expect(component.showAssetModal()).toBe(false);
+    const lastMsg = component.messages()[component.messages().length - 1];
+    expect(lastMsg.text).toContain('Ativo adicionado à sua carteira');
+  });
+
+  it('deve salvar o lançamento financeiro e fechar o modal', async () => {
     component.modalForm = {
       type: 'EXPENSE',
       amount: 45.0,
@@ -126,10 +199,10 @@ describe('AiChatComponent', () => {
     const lastMsg = component.messages()[component.messages().length - 1];
     expect(lastMsg.text).toContain('Formato inválido');
     expect(mockAiService.extractReceiptData).not.toHaveBeenCalled();
+    expect(mockAiService.extractInvestmentData).not.toHaveBeenCalled();
   });
 
   it('deve rejeitar imagens com tamanho excessivo acima de 10 MB (anti-DoS)', async () => {
-    // Simula arquivo de 12 MB
     const largeFile = new File(['x'], 'foto-gigante.jpg', { type: 'image/jpeg' });
     Object.defineProperty(largeFile, 'size', { value: 12 * 1024 * 1024 });
 
@@ -140,5 +213,3 @@ describe('AiChatComponent', () => {
     expect(mockAiService.extractReceiptData).not.toHaveBeenCalled();
   });
 });
-
-

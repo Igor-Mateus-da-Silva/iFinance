@@ -211,10 +211,8 @@ export interface NavItem {
         </button>
       </nav>
 
-      <!-- 5. Assistente de IA Gemini (visível nas telas da área financeira) -->
-      @if (!isInvestments()) {
-        <app-ai-chat></app-ai-chat>
-      }
+      <!-- 5. Assistente de IA Gemini Global (Financeiro e Investimentos) -->
+      <app-ai-chat></app-ai-chat>
     </div>
   `,
 })
