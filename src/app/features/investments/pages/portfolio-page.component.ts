@@ -19,6 +19,7 @@ interface GroupedHoldings {
   parentClassName: string | null;
   targetPercentage: number;
   totalClassValue: number;
+  savedClassValue: number;
   portfolioPercentage: number;
   items: EditableHolding[];
 }
@@ -547,6 +548,7 @@ export class PortfolioPageComponent implements OnInit {
       if (existing) {
         existing.items.push(item);
         existing.totalClassValue += item.editPrice * item.editQuantity;
+        existing.savedClassValue += item.totalValue;
       } else {
         groupMap.set(item.assetClassId, {
           classId: item.assetClassId,
@@ -554,6 +556,7 @@ export class PortfolioPageComponent implements OnInit {
           parentClassName: item.parentClassName,
           targetPercentage: item.targetPercentage,
           totalClassValue: item.editPrice * item.editQuantity,
+          savedClassValue: item.totalValue,
           portfolioPercentage: 0,
           items: [item],
         });
@@ -563,10 +566,14 @@ export class PortfolioPageComponent implements OnInit {
     const total = this.totalPortfolioValue();
     for (const grp of groupMap.values()) {
       grp.portfolioPercentage = total > 0 ? (grp.totalClassValue / total) * 100 : 0;
+      // Itens dentro da classe mantêm a ordem estável baseada no valor salvo (totalValue)
+      grp.items.sort((a, b) => b.totalValue - a.totalValue || a.ticker.localeCompare(b.ticker));
     }
 
+    // Grupos mantêm a ordem estável baseada no valor consolidado já salvo (savedClassValue)
+    // A reordenação por valor só se altera quando o usuário salva o ativo com o check
     return Array.from(groupMap.values()).sort(
-      (a, b) => b.totalClassValue - a.totalClassValue
+      (a, b) => b.savedClassValue - a.savedClassValue || a.className.localeCompare(b.className)
     );
   });
 
